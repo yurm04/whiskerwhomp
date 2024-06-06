@@ -1,14 +1,40 @@
-use bevy::{ecs::query, prelude::*, transform::commands, window::PrimaryWindow};
+use bevy::{
+    ecs::query,
+    prelude::*,
+    scene::ron::de,
+    transform::{self, commands},
+    window::{PrimaryWindow, Window, WindowPlugin, WindowResolution},
+};
 
 #[derive(Component)]
 pub struct Player {}
 
+#[derive(Component)]
+pub struct PlayerPosition {}
+
+#[derive(Component)]
+pub struct SpacePressed {
+    times: usize,
+}
+
+const WINDOW_WIDTH: f32 = 800.0;
+const WINDOW_HEIGHT: f32 = 500.0;
+
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                resolution: WindowResolution::new(WINDOW_WIDTH, WINDOW_HEIGHT),
+                resizable: false,
+                ..default()
+            }),
+            ..default()
+        }))
         .add_systems(Startup, spawn_player)
         .add_systems(Startup, spawn_camera)
-        .add_systems(Update, player_movement)
+        .add_systems(Startup, spawn_text)
+        .add_systems(Update, keyboard_control)
+        .add_systems(Update, text_update_position)
         .run();
 }
 
@@ -38,22 +64,57 @@ pub fn spawn_camera(mut commands: Commands, window_query: Query<&Window, With<Pr
     });
 }
 
-fn player_movement(
+fn keyboard_control(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut head_positions: Query<&mut Transform, With<Player>>,
+    mut player_position: Query<&mut Transform, With<Player>>,
+    mut space_text: Query<(&mut Text, &mut SpacePressed), With<SpacePressed>>,
 ) {
-    for mut transform in head_positions.iter_mut() {
-        if keyboard_input.pressed(KeyCode::ArrowLeft) {
-            transform.translation.x -= 2.;
-        }
-        if keyboard_input.pressed(KeyCode::ArrowRight) {
-            transform.translation.x += 2.;
-        }
-        if keyboard_input.pressed(KeyCode::ArrowDown) {
-            transform.translation.y -= 2.;
-        }
-        if keyboard_input.pressed(KeyCode::ArrowUp) {
-            transform.translation.y += 2.;
-        }
+    let mut transform = player_position.get_single_mut().unwrap();
+
+    if keyboard_input.pressed(KeyCode::ArrowLeft) && transform.translation.x > 0. {
+        transform.translation.x -= 10.;
     }
+    if keyboard_input.pressed(KeyCode::ArrowRight) && transform.translation.x < WINDOW_WIDTH {
+        transform.translation.x += 10.;
+    }
+    if keyboard_input.pressed(KeyCode::ArrowDown) && transform.translation.y > 0. {
+        transform.translation.y -= 10.;
+    }
+    if keyboard_input.pressed(KeyCode::ArrowUp) && transform.translation.y < WINDOW_HEIGHT {
+        transform.translation.y += 10.;
+    }
+
+    if keyboard_input.just_pressed(KeyCode::Space) {
+        let mut text = space_text.get_single_mut().unwrap();
+
+        text.1.times += 1;
+        text.0.sections[0].value = format!("{}", text.1.times);
+    }
+}
+
+fn text_update_position(
+    player_position: Query<&Transform, With<Player>>,
+    mut text_query: Query<&mut Text, With<PlayerPosition>>,
+) {
+    let transform = player_position.get_single().unwrap();
+    let mut text = text_query.get_single_mut().unwrap();
+
+    text.sections[0].value = format!("{}, {}", transform.translation.x, transform.translation.y);
+}
+
+fn spawn_text(mut commands: Commands) {
+    commands.spawn((
+        TextBundle::from_section("HEllo!", TextStyle::default()),
+        PlayerPosition {},
+    ));
+
+    commands.spawn((
+        TextBundle::from_section(String::new(), TextStyle::default()).with_style(Style {
+            position_type: PositionType::Absolute,
+            bottom: Val::Px(5.0),
+            right: Val::Px(5.0),
+            ..default()
+        }),
+        SpacePressed { times: 0 },
+    ));
 }
