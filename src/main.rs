@@ -1,3 +1,5 @@
+use std::ops::IndexMut;
+
 use bevy::{
     ecs::query,
     prelude::*,
@@ -151,16 +153,36 @@ pub fn spawn_camera(mut commands: Commands, window_query: Query<&Window, With<Pr
 
 fn animate_sprite(
     time: Res<Time>,
-    mut query: Query<(&AnimationIndices, &mut AnimationTimer, &mut TextureAtlas)>,
+    mut query: Query<(
+        &mut AnimationIndices,
+        &mut AnimationTimer,
+        &mut TextureAtlas,
+    )>,
+    player_state: Query<&PlayerState, With<Player>>,
 ) {
-    for (indices, mut timer, mut atlas) in &mut query {
+    let state = player_state.get_single().unwrap();
+
+    // not sure how to make this work
+    for (mut indices, mut timer, mut atlas) in &mut query {
         timer.tick(time.delta());
         if timer.just_finished() {
+            indices.first = match state {
+                PlayerState(State::WalkingRight) => WALK_FIRST,
+                _ => IDLE_FIRST,
+            };
+            indices.last = match state {
+                PlayerState(State::WalkingRight) => WALK_LAST,
+                _ => IDLE_LAST,
+            };
+
             atlas.index = if atlas.index == indices.last {
+                println!("atlas.index {}, indices.last {}", atlas.index, indices.last);
                 indices.first
             } else {
                 atlas.index + 1
             };
+
+            println!("{:?}", atlas.index);
         }
     }
 }
@@ -186,7 +208,7 @@ fn keyboard_control(
         transform.translation.x -= 10.;
         state.0 = State::IdleRight
     }
-    if keyboard_input.just_released(KeyCode::ArrowLeft) && transform.translation.x < WINDOW_WIDTH {
+    if keyboard_input.just_released(KeyCode::ArrowRight) && transform.translation.x < WINDOW_WIDTH {
         transform.translation.x += 10.;
         state.0 = State::IdleRight
     }
