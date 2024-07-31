@@ -296,13 +296,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy-playground"
-version = "0.1.0"
-dependencies = [
- "bevy",
-]
-
-[[package]]
 name = "bevy_a11y"
 version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3529,6 +3522,13 @@ dependencies = [
  "bitflags 2.5.0",
  "js-sys",
  "web-sys",
+]
+
+[[package]]
+name = "whiskerwhomp"
+version = "0.1.0"
+dependencies = [
+ "bevy",
 ]
 
 [[package]]
