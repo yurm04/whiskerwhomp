@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-use crate::WINDOW_BOTTOM_Y;
+use crate::CONFIG;
 
 const COLOR_PLATFORM: Color = Color::srgb(0.29, 0.31, 0.41);
 
@@ -21,7 +21,11 @@ impl PlatformBundle {
 					..Default::default()
 				},
 				transform: Transform {
-					translation: Vec3::new(x, WINDOW_BOTTOM_Y + (scale.y / 2.0), 0.0),
+					translation: Vec3::new(
+						x,
+						CONFIG.window_bottom_y + (scale.y / 2.0),
+						0.0,
+					),
 					scale,
 					..Default::default()
 				},
