@@ -8,6 +8,7 @@ struct PlayerConfig {
 	player_velocity_x: f32,
 	player_velocity_y: f32,
 	max_jump_height: f32,
+	jump_duration: f32,
 	spritesheet_cols: u32,
 	spritesheet_rows: u32,
 	sprite_path: &'static str,
@@ -25,6 +26,7 @@ static PLAYER_CONFIG: PlayerConfig = PlayerConfig {
 	player_velocity_x: 400.0,
 	player_velocity_y: 850.0,
 	max_jump_height: 230.0,
+	jump_duration: 0.25,
 	spritesheet_cols: 8,
 	spritesheet_rows: 10,
 	sprite_path: "spritesheets/cat_sprite.png",
@@ -142,6 +144,25 @@ fn movement(
 #[derive(Component)]
 struct Jump(f32);
 
+// Define control points for the cubic Bezier curve
+const CONTROL_POINTS: [(f32, f32); 4] = [
+	(0.0, 0.0),      // Starting point
+	(0.0075, 0.009), // Control point 1
+	(0.0075, 0.009), // Control point 2
+	(0.01, 0.0),     // End point
+];
+
+// Cubic Bezier function
+fn cubic_bezier(t: f32, p0: f32, p1: f32, p2: f32, p3: f32) -> f32 {
+	let u = 1.0 - t;
+	let tt = t * t;
+	let uu = u * u;
+	let uuu = uu * u;
+	let ttt = tt * t;
+
+	uuu * p0 + 3.0 * uu * t * p1 + 3.0 * u * tt * p2 + ttt * p3
+}
+
 #[allow(clippy::type_complexity)]
 fn jump(
 	input: Res<ButtonInput<KeyCode>>,
@@ -173,20 +194,33 @@ fn rise(
 
 	let (entity, mut player, mut jump) = query.single_mut();
 
-	let mut movement =
-		time.delta().as_secs_f32() * PLAYER_CONFIG.player_velocity_y;
+	let jump_duration = PLAYER_CONFIG.jump_duration;
+	let jump_height = PLAYER_CONFIG.max_jump_height;
 
-	if movement + jump.0 >= PLAYER_CONFIG.max_jump_height {
-		movement = PLAYER_CONFIG.max_jump_height - jump.0;
+	// Calculate the time passed as a fraction of the total jump duration
+	let t = jump.0 / jump_duration;
+	if t >= 1.0 {
 		commands.entity(entity).remove::<Jump>();
+		return;
 	}
 
-	jump.0 += movement;
+	// Calculate the new height using the cubic Bezier curve
+	let new_height = cubic_bezier(
+		t,
+		CONTROL_POINTS[0].1,
+		CONTROL_POINTS[1].1,
+		CONTROL_POINTS[2].1,
+		CONTROL_POINTS[3].1,
+	) * jump_height;
 
+	// Update the player's vertical position
 	match player.translation {
-		Some(vec) => player.translation = Some(Vec2::new(vec.x, movement)),
-		None => player.translation = Some(Vec2::new(0.0, movement)),
+		Some(vec) => player.translation = Some(Vec2::new(vec.x, new_height)),
+		None => player.translation = Some(Vec2::new(0.0, new_height)),
 	}
+
+	// Update the jump timer
+	jump.0 += time.delta().as_secs_f32();
 }
 
 fn fall(
