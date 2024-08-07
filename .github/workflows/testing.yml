@@ -8,11 +8,11 @@ on:
   workflow_call:
   push:
     branches:
-      - 'main'
+      - "main"
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
-      - 'main'
+      - "main"
 
 jobs:
   debug:
@@ -32,7 +32,6 @@ jobs:
 
       - name: Listing all files
         run: tree -I "target*|.git*"
-
 
   fmt:
     name: Running cargo fmt on ${{ matrix.os }}
@@ -56,7 +55,6 @@ jobs:
       - name: Run rustfmt
         run: cargo fmt --all --check
 
-
   check:
     name: Running cargo check on ${{ matrix.os }}
     strategy:
@@ -74,9 +72,12 @@ jobs:
       - name: Update toolchain
         run: rustup update --no-self-update
 
+      - name: Install ubuntu dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0
+
       - name: Run check
         run: cargo check
-
 
   clippy:
     name: Running cargo clippy on ${{ matrix.os }}
@@ -106,12 +107,15 @@ jobs:
           prefix-key: clippy-v0
           key: clippy-${{ matrix.os }}
 
+      - name: Install ubuntu dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0
+
       - name: Fetch dependencies
         run: cargo fetch --locked
 
       - name: Run clippy
         run: cargo clippy -- --deny warnings
-
 
   test:
     name: Running cargo test on ${{ matrix.os }}
@@ -138,6 +142,10 @@ jobs:
         with:
           prefix-key: test-v0
           key: test-${{ matrix.os }}
+
+      - name: Install ubuntu dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0
 
       - name: Build
         run: cargo build
