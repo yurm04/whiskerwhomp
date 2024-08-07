@@ -1,29 +1,42 @@
-use std::time::Duration;
-
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
+use std::time::Duration;
 
-use crate::{animation::Animation, WINDOW_BOTTOM_Y, WINDOW_LEFT_X};
+use crate::{animation::Animation, CONFIG};
 
-const PLAYER_VELOCITY_X: f32 = 400.0;
-const PLAYER_VELOCITY_Y: f32 = 850.0;
+struct PlayerConfig {
+	player_velocity_x: f32,
+	player_velocity_y: f32,
+	max_jump_height: f32,
+	spritesheet_cols: u32,
+	spritesheet_rows: u32,
+	sprite_path: &'static str,
+	sprite_tile_width: f32,
+	sprite_tile_height: f32,
+	sprite_render_width: f32,
+	sprite_render_height: f32,
+	sprite_idx_stand: usize,
+	sprite_idx_walking: &'static [usize; 9],
+	sprite_idx_jump: usize,
+	cycle_delay: Duration,
+}
 
-const MAX_JUMP_HEIGHT: f32 = 230.0;
-
-const SPRITESHEET_COLS: u32 = 8;
-const SPRITESHEET_ROWS: u32 = 10;
-
-const SPRITE_TILE_WIDTH: f32 = 32.;
-const SPRITE_TILE_HEIGHT: f32 = 32.;
-
-const SPRITE_RENDER_WIDTH: f32 = 64.;
-const SPRITE_RENDER_HEIGHT: f32 = 64.;
-
-const SPRITE_IDX_STAND: usize = 0;
-const SPRITE_IDX_WALKING: &[usize] = &[32, 33, 34, 35, 36, 37, 38, 39, 40];
-const SPRITE_IDX_JUMP: usize = 66;
-
-const CYCLE_DELAY: Duration = Duration::from_millis(70);
+static PLAYER_CONFIG: PlayerConfig = PlayerConfig {
+	player_velocity_x: 400.0,
+	player_velocity_y: 850.0,
+	max_jump_height: 230.0,
+	spritesheet_cols: 8,
+	spritesheet_rows: 10,
+	sprite_path: "spritesheets/cat_sprite.png",
+	sprite_tile_width: 32.,
+	sprite_tile_height: 32.,
+	sprite_render_width: 64.,
+	sprite_render_height: 64.,
+	sprite_idx_stand: 0,
+	sprite_idx_walking: &[32, 33, 34, 35, 36, 37, 38, 39, 40],
+	sprite_idx_jump: 66,
+	cycle_delay: Duration::from_millis(70),
+};
 
 pub struct PlayerPlugin;
 
@@ -54,11 +67,14 @@ fn setup(
 	mut atlases: ResMut<Assets<TextureAtlasLayout>>,
 	server: Res<AssetServer>,
 ) {
-	let image_handle: Handle<Image> = server.load("spritesheets/cat_sprite.png");
+	let image_handle: Handle<Image> = server.load(PLAYER_CONFIG.sprite_path);
 	let texture_atlas = TextureAtlasLayout::from_grid(
-		UVec2::new(SPRITE_TILE_WIDTH as u32, SPRITE_TILE_HEIGHT as u32),
-		SPRITESHEET_COLS,
-		SPRITESHEET_ROWS,
+		UVec2::new(
+			PLAYER_CONFIG.sprite_tile_width as u32,
+			PLAYER_CONFIG.sprite_tile_height as u32,
+		),
+		PLAYER_CONFIG.spritesheet_cols,
+		PLAYER_CONFIG.spritesheet_rows,
 		None,
 		None,
 	);
@@ -72,13 +88,14 @@ fn setup(
 				texture: image_handle,
 				transform: Transform {
 					translation: Vec3::new(
-						WINDOW_LEFT_X + 100.0,
-						WINDOW_BOTTOM_Y + 300.0,
+						CONFIG.window_left_x + 100.0,
+						CONFIG.window_bottom_y + 300.0,
 						0.0,
 					),
 					scale: Vec3::new(
-						SPRITE_RENDER_WIDTH / SPRITE_TILE_WIDTH,
-						SPRITE_RENDER_HEIGHT / SPRITE_TILE_HEIGHT,
+						PLAYER_CONFIG.sprite_render_width / PLAYER_CONFIG.sprite_tile_width,
+						PLAYER_CONFIG.sprite_render_height
+							/ PLAYER_CONFIG.sprite_tile_height,
 						1.0,
 					),
 					..default()
@@ -87,11 +104,14 @@ fn setup(
 			},
 			TextureAtlas {
 				layout: atlas_handle,
-				index: SPRITE_IDX_STAND,
+				index: PLAYER_CONFIG.sprite_idx_stand,
 			},
 		))
 		.insert(RigidBody::KinematicPositionBased)
-		.insert(Collider::cuboid(SPRITE_TILE_WIDTH / 2.0, SPRITE_TILE_HEIGHT / 2.0))
+		.insert(Collider::cuboid(
+			PLAYER_CONFIG.sprite_tile_width / 2.0,
+			PLAYER_CONFIG.sprite_tile_height / 2.0,
+		))
 		.insert(KinematicCharacterController::default())
 		.insert(Direction::Right);
 }
@@ -106,11 +126,11 @@ fn movement(
 	let mut movement = 0.0;
 
 	if input.pressed(KeyCode::ArrowRight) {
-		movement += time.delta_seconds() * PLAYER_VELOCITY_X;
+		movement += time.delta_seconds() * PLAYER_CONFIG.player_velocity_x;
 	}
 
 	if input.pressed(KeyCode::ArrowLeft) {
-		movement += time.delta_seconds() * PLAYER_VELOCITY_X * -1.0;
+		movement += time.delta_seconds() * PLAYER_CONFIG.player_velocity_x * -1.0;
 	}
 
 	match player.translation {
@@ -153,10 +173,11 @@ fn rise(
 
 	let (entity, mut player, mut jump) = query.single_mut();
 
-	let mut movement = time.delta().as_secs_f32() * PLAYER_VELOCITY_Y;
+	let mut movement =
+		time.delta().as_secs_f32() * PLAYER_CONFIG.player_velocity_y;
 
-	if movement + jump.0 >= MAX_JUMP_HEIGHT {
-		movement = MAX_JUMP_HEIGHT - jump.0;
+	if movement + jump.0 >= PLAYER_CONFIG.max_jump_height {
+		movement = PLAYER_CONFIG.max_jump_height - jump.0;
 		commands.entity(entity).remove::<Jump>();
 	}
 
@@ -177,7 +198,8 @@ fn fall(
 	}
 
 	let mut player = query.single_mut();
-	let movement = time.delta().as_secs_f32() * (PLAYER_VELOCITY_Y / 1.5) * -1.0;
+	let movement =
+		time.delta().as_secs_f32() * (PLAYER_CONFIG.player_velocity_y / 1.5) * -1.0;
 
 	match player.translation {
 		Some(vec) => player.translation = Some(Vec2::new(vec.x, movement)),
@@ -198,9 +220,10 @@ fn apply_movement_animation(
 
 	let (player, output) = query.single();
 	if output.desired_translation.x != 0.0 && output.grounded {
-		commands
-			.entity(player)
-			.insert(Animation::new(SPRITE_IDX_WALKING, CYCLE_DELAY));
+		commands.entity(player).insert(Animation::new(
+			PLAYER_CONFIG.sprite_idx_walking,
+			PLAYER_CONFIG.cycle_delay,
+		));
 	}
 }
 
@@ -219,7 +242,7 @@ fn apply_idle_sprite(
 	let (player, output, mut sprite) = query.single_mut();
 	if output.desired_translation.x == 0.0 && output.grounded {
 		commands.entity(player).remove::<Animation>();
-		sprite.index = SPRITE_IDX_STAND
+		sprite.index = PLAYER_CONFIG.sprite_idx_stand
 	}
 }
 
@@ -238,7 +261,7 @@ fn apply_jump_sprite(
 	let (player, output, mut sprite) = query.single_mut();
 	if !output.grounded {
 		commands.entity(player).remove::<Animation>();
-		sprite.index = SPRITE_IDX_JUMP
+		sprite.index = PLAYER_CONFIG.sprite_idx_jump
 	}
 }
 
