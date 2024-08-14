@@ -54,7 +54,8 @@ impl Plugin for PlayerPlugin {
 			.add_systems(Update, apply_idle_sprite)
 			.add_systems(Update, apply_jump_sprite)
 			.add_systems(Update, update_direction)
-			.add_systems(Update, update_sprite_direction);
+			.add_systems(Update, update_sprite_direction)
+			.add_systems(Update, camera_follow_system);
 	}
 }
 
@@ -326,5 +327,20 @@ fn update_sprite_direction(mut query: Query<(&mut Sprite, &Direction)>) {
 	match direction {
 		Direction::Right => sprite.flip_x = false,
 		Direction::Left => sprite.flip_x = true,
+	}
+}
+
+fn camera_follow_system(
+	player_query: Query<&Transform, With<KinematicCharacterControllerOutput>>,
+	mut camera_query: Query<
+		&mut Transform,
+		(With<Camera>, Without<KinematicCharacterControllerOutput>),
+	>,
+) {
+	if let Ok(player_transform) = player_query.get_single() {
+		for mut camera_transform in camera_query.iter_mut() {
+			camera_transform.translation.x = player_transform.translation.x;
+			camera_transform.translation.y = player_transform.translation.y;
+		}
 	}
 }
