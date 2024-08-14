@@ -65,6 +65,15 @@ enum Direction {
 	Left,
 }
 
+#[derive(Component, Debug)]
+struct Movement {
+	previous: f32,
+	moving_right: bool,
+	moving_left: bool,
+	distance_right: f32,
+	distance_left: f32,
+}
+
 fn setup(
 	mut commands: Commands,
 	mut atlases: ResMut<Assets<TextureAtlasLayout>>,
@@ -116,7 +125,14 @@ fn setup(
 			PLAYER_CONFIG.sprite_tile_height / 2.0,
 		))
 		.insert(KinematicCharacterController::default())
-		.insert(Direction::Right);
+		.insert(Direction::Right)
+		.insert(Movement {
+			distance_left: 0.,
+			distance_right: 0.,
+			moving_left: false,
+			moving_right: false,
+			previous: 0.,
+		});
 }
 
 fn movement(
@@ -216,8 +232,8 @@ fn rise(
 
 	// Update the player's vertical position
 	match player.translation {
-		Some(vec) => player.translation = Some(Vec2::new(vec.x, new_height)),
-		None => player.translation = Some(Vec2::new(0.0, new_height)),
+		Some(vec) => player.translation = Some(Vec2::new(vec.x, new_height * 20.0)),
+		None => player.translation = Some(Vec2::new(0.0, new_height * 20.0)),
 	}
 
 	// Update the jump timer
@@ -336,11 +352,53 @@ fn camera_follow_system(
 		&mut Transform,
 		(With<Camera>, Without<KinematicCharacterControllerOutput>),
 	>,
+	mut movement_query: Query<&mut Movement>,
 ) {
 	if let Ok(player_transform) = player_query.get_single() {
-		for mut camera_transform in camera_query.iter_mut() {
-			camera_transform.translation.x = player_transform.translation.x;
-			camera_transform.translation.y = player_transform.translation.y;
+		if let Ok(mut camera_transform) = camera_query.get_single_mut() {
+			if let Ok(mut movement) = movement_query.get_single_mut() {
+				if player_transform.translation.x > movement.previous {
+					movement.moving_right = true;
+					movement.moving_left = false;
+					movement.distance_right +=
+						player_transform.translation.x - movement.distance_right;
+					movement.distance_left = 0.;
+					movement.previous = player_transform.translation.x;
+				} else if player_transform.translation.x < movement.previous {
+					movement.moving_right = false;
+					movement.moving_left = true;
+					movement.distance_right = 0.;
+					movement.distance_left +=
+						movement.distance_left - player_transform.translation.x;
+					movement.previous = player_transform.translation.x;
+				}
+
+				if movement.moving_right
+					&& movement.distance_right > (CONFIG.window_width / 2.) - 100.
+				{
+					// todo!("move camera right");
+				}
+
+				if movement.moving_left
+					&& movement.distance_left > (CONFIG.window_width / 2.) - 100.
+				{
+					// todo!("move camera left");
+				}
+
+				println!("{movement:?}");
+			}
+			// let right_boundary = (CONFIG.window_width / 2.) - 100.;
+			// let left_boundary = (CONFIG.window_width / 2. * -1.) + 100.;
+			// if player_transform.translation.x > right_boundary {
+			// 	camera_transform.translation.x =
+			// 		player_transform.translation.x - right_boundary;
+			// }
+
+			// if player_transform.translation.x < left_boundary {
+			// 	camera_transform.translation.x =
+			// 		player_transform.translation.x - left_boundary;
+			// }
+			// camera_transform.translation.y = player_transform.translation.y;
 		}
 	}
 }

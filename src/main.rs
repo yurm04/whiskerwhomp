@@ -66,11 +66,15 @@ fn setup(mut commands: Commands) {
 			},
 			transform: Transform {
 				translation: Vec3::new(
-					0.0,
+					-500.0,
 					CONFIG.window_bottom_y + (CONFIG.floor_thickness / 2.0),
 					0.0,
 				),
-				scale: Vec3::new(CONFIG.window_width, CONFIG.floor_thickness, 1.0),
+				scale: Vec3::new(
+					CONFIG.window_width * 1000.0,
+					CONFIG.floor_thickness,
+					1.0,
+				),
 				..Default::default()
 			},
 			..Default::default()
