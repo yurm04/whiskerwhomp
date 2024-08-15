@@ -25,7 +25,7 @@ pub static CONFIG: Config = Config {
 	window_height: 720.0,
 	window_bottom_y: 720.0 / -2.0,
 	window_left_x: 1024.0 / -2.0,
-	floor_thickness: 10.0,
+	floor_thickness: 5.0,
 	color_background: Color::srgb(0.13, 0.13, 0.23),
 	color_floor: Color::srgb(0.45, 0.55, 0.66),
 	title: "Whiskerwhomp",
@@ -62,19 +62,26 @@ fn setup(mut commands: Commands) {
 		.spawn(SpriteBundle {
 			sprite: Sprite {
 				color: CONFIG.color_floor,
+				custom_size: Some(Vec2::new(
+					CONFIG.window_width * 100.0,
+					CONFIG.floor_thickness,
+				)),
 				..Default::default()
 			},
 			transform: Transform {
 				translation: Vec3::new(
 					0.0,
 					CONFIG.window_bottom_y + (CONFIG.floor_thickness / 2.0),
-					0.0,
+					1.0,
 				),
-				scale: Vec3::new(CONFIG.window_width, CONFIG.floor_thickness, 1.0),
+				scale: Vec3::new(1.0, 1.0, 1.0),
 				..Default::default()
 			},
 			..Default::default()
 		})
 		.insert(RigidBody::Fixed)
-		.insert(Collider::cuboid(0.5, 0.5));
+		.insert(Collider::cuboid(
+			CONFIG.window_width * 50.0,
+			CONFIG.floor_thickness / 2.0,
+		));
 }

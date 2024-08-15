@@ -5,6 +5,8 @@ use std::time::Duration;
 use crate::{animation::Animation, CONFIG};
 
 struct PlayerConfig {
+	player_starting_x: f32,
+	player_starting_y: f32,
 	player_velocity_x: f32,
 	player_velocity_y: f32,
 	max_jump_height: f32,
@@ -20,9 +22,12 @@ struct PlayerConfig {
 	sprite_idx_walking: &'static [usize; 9],
 	sprite_idx_jump: usize,
 	cycle_delay: Duration,
+	camera_edge_boundary: f32,
 }
 
 static PLAYER_CONFIG: PlayerConfig = PlayerConfig {
+	player_starting_x: CONFIG.window_left_x + 100.0,
+	player_starting_y: CONFIG.window_bottom_y + 300.0,
 	player_velocity_x: 400.0,
 	player_velocity_y: 850.0,
 	max_jump_height: 230.0,
@@ -38,6 +43,7 @@ static PLAYER_CONFIG: PlayerConfig = PlayerConfig {
 	sprite_idx_walking: &[32, 33, 34, 35, 36, 37, 38, 39, 40],
 	sprite_idx_jump: 66,
 	cycle_delay: Duration::from_millis(70),
+	camera_edge_boundary: 100.0,
 };
 
 pub struct PlayerPlugin;
@@ -86,21 +92,21 @@ fn setup(
 	commands
 		.spawn((
 			SpriteBundle {
-				sprite: Sprite::default(),
-
+				sprite: Sprite {
+					custom_size: Some(Vec2::new(
+						PLAYER_CONFIG.sprite_render_width,
+						PLAYER_CONFIG.sprite_render_height,
+					)),
+					..Default::default()
+				},
 				texture: image_handle,
 				transform: Transform {
 					translation: Vec3::new(
-						CONFIG.window_left_x + 100.0,
-						CONFIG.window_bottom_y + 300.0,
-						0.0,
-					),
-					scale: Vec3::new(
-						PLAYER_CONFIG.sprite_render_width / PLAYER_CONFIG.sprite_tile_width,
-						PLAYER_CONFIG.sprite_render_height
-							/ PLAYER_CONFIG.sprite_tile_height,
+						PLAYER_CONFIG.player_starting_x,
+						PLAYER_CONFIG.player_starting_y,
 						1.0,
 					),
+					scale: Vec3::new(1.0, 1.0, 1.0),
 					..default()
 				},
 				..default()
@@ -112,8 +118,8 @@ fn setup(
 		))
 		.insert(RigidBody::KinematicPositionBased)
 		.insert(Collider::cuboid(
-			PLAYER_CONFIG.sprite_tile_width / 2.0,
-			PLAYER_CONFIG.sprite_tile_height / 2.0,
+			PLAYER_CONFIG.sprite_render_width / 2.0,
+			PLAYER_CONFIG.sprite_render_height / 2.0,
 		))
 		.insert(KinematicCharacterController::default())
 		.insert(Direction::Right);
@@ -136,9 +142,11 @@ fn movement(
 		movement += time.delta_seconds() * PLAYER_CONFIG.player_velocity_x * -1.0;
 	}
 
-	match player.translation {
-		Some(vec) => player.translation = Some(Vec2::new(movement, vec.y)),
-		None => player.translation = Some(Vec2::new(movement, 0.0)),
+	if let Some(mut translation) = player.translation {
+		translation.x = movement;
+		player.translation = Some(translation);
+	} else {
+		player.translation = Some(Vec2::new(movement, 0.0));
 	}
 }
 
@@ -216,8 +224,8 @@ fn rise(
 
 	// Update the player's vertical position
 	match player.translation {
-		Some(vec) => player.translation = Some(Vec2::new(vec.x, new_height)),
-		None => player.translation = Some(Vec2::new(0.0, new_height)),
+		Some(vec) => player.translation = Some(Vec2::new(vec.x, new_height * 8.0)),
+		None => player.translation = Some(Vec2::new(0.0, new_height * 8.0)),
 	}
 
 	// Update the jump timer
@@ -338,9 +346,19 @@ fn camera_follow_system(
 	>,
 ) {
 	if let Ok(player_transform) = player_query.get_single() {
-		for mut camera_transform in camera_query.iter_mut() {
-			camera_transform.translation.x = player_transform.translation.x;
-			camera_transform.translation.y = player_transform.translation.y;
+		if let Ok(mut camera_transform) = camera_query.get_single_mut() {
+			let player_x = player_transform.translation.x;
+			let camera_x = camera_transform.translation.x;
+			let left_bound = camera_x - (CONFIG.window_width / 2.)
+				+ PLAYER_CONFIG.camera_edge_boundary;
+			let right_bound = camera_x + (CONFIG.window_width / 2.)
+				- PLAYER_CONFIG.camera_edge_boundary;
+
+			if player_x > right_bound {
+				camera_transform.translation.x += player_x - right_bound;
+			} else if player_x < left_bound {
+				camera_transform.translation.x += player_x - left_bound;
+			}
 		}
 	}
 }
