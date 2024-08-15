@@ -5,6 +5,8 @@ use std::time::Duration;
 use crate::{animation::Animation, CONFIG};
 
 struct PlayerConfig {
+	player_starting_x: f32,
+	player_starting_y: f32,
 	player_velocity_x: f32,
 	player_velocity_y: f32,
 	max_jump_height: f32,
@@ -23,6 +25,8 @@ struct PlayerConfig {
 }
 
 static PLAYER_CONFIG: PlayerConfig = PlayerConfig {
+	player_starting_x: CONFIG.window_left_x + 100.0,
+	player_starting_y: CONFIG.window_bottom_y + 300.0,
 	player_velocity_x: 400.0,
 	player_velocity_y: 850.0,
 	max_jump_height: 230.0,
@@ -70,8 +74,7 @@ struct Movement {
 	previous: f32,
 	moving_right: bool,
 	moving_left: bool,
-	distance_right: f32,
-	distance_left: f32,
+	distance_traveled: f32,
 }
 
 fn setup(
@@ -100,8 +103,8 @@ fn setup(
 				texture: image_handle,
 				transform: Transform {
 					translation: Vec3::new(
-						CONFIG.window_left_x + 100.0,
-						CONFIG.window_bottom_y + 300.0,
+						PLAYER_CONFIG.player_starting_x,
+						PLAYER_CONFIG.player_starting_y,
 						0.0,
 					),
 					scale: Vec3::new(
@@ -127,11 +130,10 @@ fn setup(
 		.insert(KinematicCharacterController::default())
 		.insert(Direction::Right)
 		.insert(Movement {
-			distance_left: 0.,
-			distance_right: 0.,
-			moving_left: false,
+			previous: PLAYER_CONFIG.player_starting_x,
 			moving_right: false,
-			previous: 0.,
+			moving_left: false,
+			distance_traveled: 0.,
 		});
 }
 
@@ -358,30 +360,33 @@ fn camera_follow_system(
 		if let Ok(mut camera_transform) = camera_query.get_single_mut() {
 			if let Ok(mut movement) = movement_query.get_single_mut() {
 				if player_transform.translation.x > movement.previous {
-					movement.moving_right = true;
-					movement.moving_left = false;
-					movement.distance_right +=
-						player_transform.translation.x - movement.distance_right;
-					movement.distance_left = 0.;
+					if movement.moving_left || !movement.moving_right {
+						movement.moving_right = true;
+						movement.moving_left = false;
+						movement.distance_traveled = 0.;
+					}
+					movement.distance_traveled +=
+						player_transform.translation.x - movement.previous;
 					movement.previous = player_transform.translation.x;
 				} else if player_transform.translation.x < movement.previous {
-					movement.moving_right = false;
-					movement.moving_left = true;
-					movement.distance_right = 0.;
-					movement.distance_left +=
-						movement.distance_left - player_transform.translation.x;
+					if movement.moving_right || !movement.moving_left {
+						movement.moving_right = false;
+						movement.moving_left = true;
+						movement.distance_traveled = 0.;
+					}
+					movement.distance_traveled +=
+						movement.previous - player_transform.translation.x;
 					movement.previous = player_transform.translation.x;
 				}
 
-				if movement.moving_right
-					&& movement.distance_right > (CONFIG.window_width / 2.) - 100.
-				{
+				let traveled_enough =
+					movement.distance_traveled > (CONFIG.window_width / 2.) - 100.;
+
+				if movement.moving_right && traveled_enough {
 					// todo!("move camera right");
 				}
 
-				if movement.moving_left
-					&& movement.distance_left > (CONFIG.window_width / 2.) - 100.
-				{
+				if movement.moving_left && traveled_enough {
 					// todo!("move camera left");
 				}
 
