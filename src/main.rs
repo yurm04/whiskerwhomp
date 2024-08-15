@@ -25,7 +25,7 @@ pub static CONFIG: Config = Config {
 	window_height: 720.0,
 	window_bottom_y: 720.0 / -2.0,
 	window_left_x: 1024.0 / -2.0,
-	floor_thickness: 500.0,
+	floor_thickness: 5.0,
 	color_background: Color::srgb(0.13, 0.13, 0.23),
 	color_floor: Color::srgb(0.45, 0.55, 0.66),
 	title: "Whiskerwhomp",
@@ -66,7 +66,7 @@ fn setup(mut commands: Commands) {
 			},
 			transform: Transform {
 				translation: Vec3::new(
-					-500.0,
+					0.0,
 					CONFIG.window_bottom_y + (CONFIG.floor_thickness / 2.0),
 					0.0,
 				),
@@ -80,5 +80,5 @@ fn setup(mut commands: Commands) {
 			..Default::default()
 		})
 		.insert(RigidBody::Fixed)
-		.insert(Collider::cuboid(0.5, 0.5));
+		.insert(Collider::cuboid(CONFIG.window_width * 1000.0, 0.5));
 }
