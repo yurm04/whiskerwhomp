@@ -62,6 +62,10 @@ fn setup(mut commands: Commands) {
 		.spawn(SpriteBundle {
 			sprite: Sprite {
 				color: CONFIG.color_floor,
+				custom_size: Some(Vec2::new(
+					CONFIG.window_width * 100.0,
+					CONFIG.floor_thickness,
+				)),
 				..Default::default()
 			},
 			transform: Transform {
@@ -70,15 +74,14 @@ fn setup(mut commands: Commands) {
 					CONFIG.window_bottom_y + (CONFIG.floor_thickness / 2.0),
 					1.0,
 				),
-				scale: Vec3::new(
-					CONFIG.window_width * 1000.0,
-					CONFIG.floor_thickness,
-					1.0,
-				),
+				scale: Vec3::new(1.0, 1.0, 1.0),
 				..Default::default()
 			},
 			..Default::default()
 		})
 		.insert(RigidBody::Fixed)
-		.insert(Collider::cuboid(CONFIG.window_width * 1000.0, 0.5));
+		.insert(Collider::cuboid(
+			CONFIG.window_width * 50.0,
+			CONFIG.floor_thickness / 2.0,
+		));
 }

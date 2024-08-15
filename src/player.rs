@@ -92,21 +92,21 @@ fn setup(
 	commands
 		.spawn((
 			SpriteBundle {
-				sprite: Sprite::default(),
-
+				sprite: Sprite {
+					custom_size: Some(Vec2::new(
+						PLAYER_CONFIG.sprite_render_width,
+						PLAYER_CONFIG.sprite_render_height,
+					)),
+					..Default::default()
+				},
 				texture: image_handle,
 				transform: Transform {
 					translation: Vec3::new(
 						PLAYER_CONFIG.player_starting_x,
 						PLAYER_CONFIG.player_starting_y,
-						0.0,
-					),
-					scale: Vec3::new(
-						PLAYER_CONFIG.sprite_render_width / PLAYER_CONFIG.sprite_tile_width,
-						PLAYER_CONFIG.sprite_render_height
-							/ PLAYER_CONFIG.sprite_tile_height,
 						1.0,
 					),
+					scale: Vec3::new(1.0, 1.0, 1.0),
 					..default()
 				},
 				..default()
@@ -118,8 +118,8 @@ fn setup(
 		))
 		.insert(RigidBody::KinematicPositionBased)
 		.insert(Collider::cuboid(
-			PLAYER_CONFIG.sprite_tile_width / 2.0,
-			PLAYER_CONFIG.sprite_tile_height / 2.0,
+			PLAYER_CONFIG.sprite_render_width / 2.0,
+			PLAYER_CONFIG.sprite_render_height / 2.0,
 		))
 		.insert(KinematicCharacterController::default())
 		.insert(Direction::Right);
@@ -142,9 +142,11 @@ fn movement(
 		movement += time.delta_seconds() * PLAYER_CONFIG.player_velocity_x * -1.0;
 	}
 
-	match player.translation {
-		Some(vec) => player.translation = Some(Vec2::new(movement, vec.y)),
-		None => player.translation = Some(Vec2::new(movement, 0.0)),
+	if let Some(mut translation) = player.translation {
+		translation.x = movement;
+		player.translation = Some(translation);
+	} else {
+		player.translation = Some(Vec2::new(movement, 0.0));
 	}
 }
 
