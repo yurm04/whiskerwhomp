@@ -69,14 +69,6 @@ enum Direction {
 	Left,
 }
 
-#[derive(Component, Debug)]
-struct Movement {
-	previous: f32,
-	moving_right: bool,
-	moving_left: bool,
-	distance_traveled: f32,
-}
-
 fn setup(
 	mut commands: Commands,
 	mut atlases: ResMut<Assets<TextureAtlasLayout>>,
@@ -128,13 +120,7 @@ fn setup(
 			PLAYER_CONFIG.sprite_tile_height / 2.0,
 		))
 		.insert(KinematicCharacterController::default())
-		.insert(Direction::Right)
-		.insert(Movement {
-			previous: PLAYER_CONFIG.player_starting_x,
-			moving_right: false,
-			moving_left: false,
-			distance_traveled: 0.,
-		});
+		.insert(Direction::Right);
 }
 
 fn movement(
@@ -354,45 +340,18 @@ fn camera_follow_system(
 		&mut Transform,
 		(With<Camera>, Without<KinematicCharacterControllerOutput>),
 	>,
-	mut movement_query: Query<&mut Movement>,
 ) {
 	if let Ok(player_transform) = player_query.get_single() {
 		if let Ok(mut camera_transform) = camera_query.get_single_mut() {
-			if let Ok(mut movement) = movement_query.get_single_mut() {
-				if player_transform.translation.x > movement.previous {
-					if movement.moving_left || !movement.moving_right {
-						movement.moving_right = true;
-						movement.moving_left = false;
-						movement.distance_traveled = 0.;
-					}
-					movement.distance_traveled +=
-						player_transform.translation.x - movement.previous;
-					movement.previous = player_transform.translation.x;
-				} else if player_transform.translation.x < movement.previous {
-					if movement.moving_right || !movement.moving_left {
-						movement.moving_right = false;
-						movement.moving_left = true;
-						movement.distance_traveled = 0.;
-					}
-					movement.distance_traveled +=
-						movement.previous - player_transform.translation.x;
-					movement.previous = player_transform.translation.x;
-				}
+			let player_x = player_transform.translation.x;
+			let camera_x = camera_transform.translation.x;
+			let left_bound = camera_x - (CONFIG.window_width / 2.) + 100.0;
+			let right_bound = camera_x + (CONFIG.window_width / 2.) - 100.0;
 
-				let traveled_enough =
-					movement.distance_traveled > (CONFIG.window_width / 2.) - 100.;
-
-				if movement.moving_right && traveled_enough {
-					// camera_transform.translation.x =
-					// 	movement.distance_traveled - (CONFIG.window_width / 2.) - 100.;
-				}
-
-				if movement.moving_left && traveled_enough {
-					// camera_transform.translation.x =
-					// 	movement.distance_traveled - (CONFIG.window_width / 2.) - 100.;
-				}
-
-				println!("{movement:?}");
+			if player_x > right_bound {
+				camera_transform.translation.x += player_x - right_bound;
+			} else if player_x < left_bound {
+				camera_transform.translation.x += player_x - left_bound;
 			}
 		}
 	}
