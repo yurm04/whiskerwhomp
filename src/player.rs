@@ -25,8 +25,8 @@ struct PlayerConfig {
 }
 
 static PLAYER_CONFIG: PlayerConfig = PlayerConfig {
-	player_starting_x: CONFIG.window_left_x + 100.0,
-	player_starting_y: CONFIG.window_bottom_y + 300.0,
+	player_starting_x: 0.,
+	player_starting_y: CONFIG.window_bottom_y + 700.0,
 	player_velocity_x: 400.0,
 	player_velocity_y: 850.0,
 	max_jump_height: 230.0,
@@ -383,27 +383,17 @@ fn camera_follow_system(
 					movement.distance_traveled > (CONFIG.window_width / 2.) - 100.;
 
 				if movement.moving_right && traveled_enough {
-					// todo!("move camera right");
+					// camera_transform.translation.x =
+					// 	movement.distance_traveled - (CONFIG.window_width / 2.) - 100.;
 				}
 
 				if movement.moving_left && traveled_enough {
-					// todo!("move camera left");
+					// camera_transform.translation.x =
+					// 	movement.distance_traveled - (CONFIG.window_width / 2.) - 100.;
 				}
 
 				println!("{movement:?}");
 			}
-			// let right_boundary = (CONFIG.window_width / 2.) - 100.;
-			// let left_boundary = (CONFIG.window_width / 2. * -1.) + 100.;
-			// if player_transform.translation.x > right_boundary {
-			// 	camera_transform.translation.x =
-			// 		player_transform.translation.x - right_boundary;
-			// }
-
-			// if player_transform.translation.x < left_boundary {
-			// 	camera_transform.translation.x =
-			// 		player_transform.translation.x - left_boundary;
-			// }
-			// camera_transform.translation.y = player_transform.translation.y;
 		}
 	}
 }
