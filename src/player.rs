@@ -25,8 +25,8 @@ struct PlayerConfig {
 }
 
 static PLAYER_CONFIG: PlayerConfig = PlayerConfig {
-	player_starting_x: 0.,
-	player_starting_y: CONFIG.window_bottom_y + 700.0,
+	player_starting_x: CONFIG.window_left_x + 100.0,
+	player_starting_y: CONFIG.window_bottom_y + 300.0,
 	player_velocity_x: 400.0,
 	player_velocity_y: 850.0,
 	max_jump_height: 230.0,
@@ -220,8 +220,8 @@ fn rise(
 
 	// Update the player's vertical position
 	match player.translation {
-		Some(vec) => player.translation = Some(Vec2::new(vec.x, new_height * 20.0)),
-		None => player.translation = Some(Vec2::new(0.0, new_height * 20.0)),
+		Some(vec) => player.translation = Some(Vec2::new(vec.x, new_height * 8.0)),
+		None => player.translation = Some(Vec2::new(0.0, new_height * 8.0)),
 	}
 
 	// Update the jump timer
