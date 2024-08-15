@@ -24,7 +24,7 @@ impl PlatformBundle {
 					translation: Vec3::new(
 						x,
 						CONFIG.window_bottom_y + (scale.y / 2.0),
-						0.0,
+						1.0,
 					),
 					scale,
 					..Default::default()

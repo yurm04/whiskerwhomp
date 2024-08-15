@@ -22,6 +22,7 @@ struct PlayerConfig {
 	sprite_idx_walking: &'static [usize; 9],
 	sprite_idx_jump: usize,
 	cycle_delay: Duration,
+	camera_edge_boundary: f32,
 }
 
 static PLAYER_CONFIG: PlayerConfig = PlayerConfig {
@@ -42,6 +43,7 @@ static PLAYER_CONFIG: PlayerConfig = PlayerConfig {
 	sprite_idx_walking: &[32, 33, 34, 35, 36, 37, 38, 39, 40],
 	sprite_idx_jump: 66,
 	cycle_delay: Duration::from_millis(70),
+	camera_edge_boundary: 100.0,
 };
 
 pub struct PlayerPlugin;
@@ -345,8 +347,10 @@ fn camera_follow_system(
 		if let Ok(mut camera_transform) = camera_query.get_single_mut() {
 			let player_x = player_transform.translation.x;
 			let camera_x = camera_transform.translation.x;
-			let left_bound = camera_x - (CONFIG.window_width / 2.) + 100.0;
-			let right_bound = camera_x + (CONFIG.window_width / 2.) - 100.0;
+			let left_bound = camera_x - (CONFIG.window_width / 2.)
+				+ PLAYER_CONFIG.camera_edge_boundary;
+			let right_bound = camera_x + (CONFIG.window_width / 2.)
+				- PLAYER_CONFIG.camera_edge_boundary;
 
 			if player_x > right_bound {
 				camera_transform.translation.x += player_x - right_bound;
