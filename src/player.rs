@@ -22,7 +22,6 @@ struct PlayerConfig {
 	sprite_idx_idle: &'static [usize; 4],
 	sprite_idx_walking: &'static [usize; 9],
 	sprite_idx_jumping: &'static [usize; 7],
-	sprite_idx_jump: usize,
 	cycle_delay: Duration,
 	camera_edge_boundary: f32,
 }
@@ -44,7 +43,6 @@ static PLAYER_CONFIG: PlayerConfig = PlayerConfig {
 	sprite_idx_stand: 0,
 	sprite_idx_idle: &[0, 1, 2, 3],
 	sprite_idx_walking: &[32, 33, 34, 35, 36, 37, 38, 39, 40],
-	sprite_idx_jump: 66,
 	sprite_idx_jumping: &[64, 65, 66, 67, 68, 69, 70],
 	cycle_delay: Duration::from_millis(70),
 	camera_edge_boundary: 100.0,
@@ -259,17 +257,13 @@ fn fall(
 }
 
 fn apply_movement_animation(
-	mut query: Query<(
-		Entity,
-		&KinematicCharacterControllerOutput,
-		&mut Animation,
-	)>,
+	mut query: Query<(&KinematicCharacterControllerOutput, &mut Animation)>,
 ) {
 	if query.is_empty() {
 		return;
 	}
 
-	let (player, output, mut animation) = query.single_mut();
+	let (output, mut animation) = query.single_mut();
 	if output.desired_translation.x != 0.0 && output.grounded {
 		animation.sprites = PLAYER_CONFIG.sprite_idx_walking;
 	}
