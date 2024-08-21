@@ -30,8 +30,8 @@ static PLAYER_CONFIG: PlayerConfig = PlayerConfig {
 	player_starting_y: CONFIG.window_bottom_y + 300.0,
 	player_velocity_x: 400.0,
 	player_velocity_y: 850.0,
-	max_jump_height: 230.0,
-	jump_duration: 0.25,
+	max_jump_height: 4500.0,
+	jump_duration: 0.20,
 	spritesheet_cols: 8,
 	spritesheet_rows: 10,
 	sprite_path: "spritesheets/cat_sprite.png",
@@ -224,8 +224,8 @@ fn rise(
 
 	// Update the player's vertical position
 	match player.translation {
-		Some(vec) => player.translation = Some(Vec2::new(vec.x, new_height * 8.0)),
-		None => player.translation = Some(Vec2::new(0.0, new_height * 8.0)),
+		Some(vec) => player.translation = Some(Vec2::new(vec.x, new_height)),
+		None => player.translation = Some(Vec2::new(0.0, new_height)),
 	}
 
 	// Update the jump timer
