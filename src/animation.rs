@@ -37,7 +37,6 @@ fn animate(
 			let next_idx = (current_idx
 				+ animation.timer.times_finished_this_tick() as usize)
 				% animation.sprites.len();
-
 			sprite.index = animation.sprites[next_idx];
 		}
 	}

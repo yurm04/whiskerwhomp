@@ -19,7 +19,9 @@ struct PlayerConfig {
 	sprite_render_width: f32,
 	sprite_render_height: f32,
 	sprite_idx_stand: usize,
+	sprite_idx_idle: &'static [usize; 4],
 	sprite_idx_walking: &'static [usize; 9],
+	sprite_idx_jumping: &'static [usize; 7],
 	sprite_idx_jump: usize,
 	cycle_delay: Duration,
 	camera_edge_boundary: f32,
@@ -40,8 +42,10 @@ static PLAYER_CONFIG: PlayerConfig = PlayerConfig {
 	sprite_render_width: 64.,
 	sprite_render_height: 64.,
 	sprite_idx_stand: 0,
+	sprite_idx_idle: &[0, 1, 2, 3],
 	sprite_idx_walking: &[32, 33, 34, 35, 36, 37, 38, 39, 40],
 	sprite_idx_jump: 66,
+	sprite_idx_jumping: &[64, 65, 66, 67, 68, 69, 70],
 	cycle_delay: Duration::from_millis(70),
 	camera_edge_boundary: 100.0,
 };
@@ -57,8 +61,8 @@ impl Plugin for PlayerPlugin {
 			.add_systems(Update, rise)
 			.add_systems(Update, fall)
 			.add_systems(Update, apply_movement_animation)
-			.add_systems(Update, apply_idle_sprite)
-			.add_systems(Update, apply_jump_sprite)
+			.add_systems(Update, apply_idle_animation)
+			.add_systems(Update, apply_jumping_animation)
 			.add_systems(Update, update_direction)
 			.add_systems(Update, update_sprite_direction)
 			.add_systems(Update, camera_follow_system);
@@ -122,7 +126,11 @@ fn setup(
 			PLAYER_CONFIG.sprite_render_height / 2.0,
 		))
 		.insert(KinematicCharacterController::default())
-		.insert(Direction::Right);
+		.insert(Direction::Right)
+		.insert(Animation::new(
+			PLAYER_CONFIG.sprite_idx_idle,
+			PLAYER_CONFIG.cycle_delay,
+		));
 }
 
 fn movement(
@@ -251,60 +259,45 @@ fn fall(
 }
 
 fn apply_movement_animation(
-	mut commands: Commands,
-	query: Query<
-		(Entity, &KinematicCharacterControllerOutput),
-		Without<Animation>,
-	>,
+	mut query: Query<(
+		Entity,
+		&KinematicCharacterControllerOutput,
+		&mut Animation,
+	)>,
 ) {
 	if query.is_empty() {
 		return;
 	}
 
-	let (player, output) = query.single();
+	let (player, output, mut animation) = query.single_mut();
 	if output.desired_translation.x != 0.0 && output.grounded {
-		commands.entity(player).insert(Animation::new(
-			PLAYER_CONFIG.sprite_idx_walking,
-			PLAYER_CONFIG.cycle_delay,
-		));
+		animation.sprites = PLAYER_CONFIG.sprite_idx_walking;
 	}
 }
 
-fn apply_idle_sprite(
-	mut commands: Commands,
-	mut query: Query<(
-		Entity,
-		&KinematicCharacterControllerOutput,
-		&mut TextureAtlas,
-	)>,
+fn apply_idle_animation(
+	mut query: Query<(&KinematicCharacterControllerOutput, &mut Animation)>,
 ) {
 	if query.is_empty() {
 		return;
 	}
 
-	let (player, output, mut sprite) = query.single_mut();
+	let (output, mut animation) = query.single_mut();
 	if output.desired_translation.x == 0.0 && output.grounded {
-		commands.entity(player).remove::<Animation>();
-		sprite.index = PLAYER_CONFIG.sprite_idx_stand
+		animation.sprites = PLAYER_CONFIG.sprite_idx_idle;
 	}
 }
 
-fn apply_jump_sprite(
-	mut commands: Commands,
-	mut query: Query<(
-		Entity,
-		&KinematicCharacterControllerOutput,
-		&mut TextureAtlas,
-	)>,
+fn apply_jumping_animation(
+	mut query: Query<(&KinematicCharacterControllerOutput, &mut Animation)>,
 ) {
 	if query.is_empty() {
 		return;
 	}
 
-	let (player, output, mut sprite) = query.single_mut();
+	let (output, mut animation) = query.single_mut();
 	if !output.grounded {
-		commands.entity(player).remove::<Animation>();
-		sprite.index = PLAYER_CONFIG.sprite_idx_jump
+		animation.sprites = PLAYER_CONFIG.sprite_idx_jumping;
 	}
 }
 
