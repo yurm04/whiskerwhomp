@@ -2,7 +2,11 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use std::time::Duration;
 
-use crate::{animation::Animation, CONFIG};
+use crate::{
+	animation::Animation,
+	character::{CharacterBundle, Direction, Velocity},
+	CONFIG,
+};
 
 struct PlayerConfig {
 	player_starting_x: f32,
@@ -68,10 +72,7 @@ impl Plugin for PlayerPlugin {
 }
 
 #[derive(Component)]
-enum Direction {
-	Right,
-	Left,
-}
+struct Player {}
 
 fn setup(
 	mut commands: Commands,
@@ -91,9 +92,10 @@ fn setup(
 	);
 	let atlas_handle = atlases.add(texture_atlas);
 
-	commands
-		.spawn((
-			SpriteBundle {
+	commands.spawn((
+		Player {},
+		CharacterBundle {
+			sprite: SpriteBundle {
 				sprite: Sprite {
 					custom_size: Some(Vec2::new(
 						PLAYER_CONFIG.sprite_render_width,
@@ -113,39 +115,40 @@ fn setup(
 				},
 				..default()
 			},
-			TextureAtlas {
+			texture_atlas: TextureAtlas {
 				layout: atlas_handle,
 				index: PLAYER_CONFIG.sprite_idx_stand,
 			},
-		))
-		.insert(RigidBody::KinematicPositionBased)
-		.insert(Collider::cuboid(
-			PLAYER_CONFIG.sprite_render_width / 2.0,
-			PLAYER_CONFIG.sprite_render_height / 2.0,
-		))
-		.insert(KinematicCharacterController::default())
-		.insert(Direction::Right)
-		.insert(Animation::new(
-			PLAYER_CONFIG.sprite_idx_idle,
-			PLAYER_CONFIG.cycle_delay,
-		));
+			animation: Animation::new(
+				PLAYER_CONFIG.sprite_idx_idle,
+				PLAYER_CONFIG.cycle_delay,
+			),
+			velocity: Velocity {
+				x: PLAYER_CONFIG.player_velocity_x,
+				y: PLAYER_CONFIG.player_velocity_y,
+			},
+			..default()
+		},
+	));
 }
 
 fn movement(
 	input: Res<ButtonInput<KeyCode>>,
 	time: Res<Time>,
-	mut query: Query<&mut KinematicCharacterController>,
+	mut player_query: Query<&mut KinematicCharacterController>,
+	velocity_query: Query<&Velocity, With<Player>>,
 ) {
-	let mut player = query.single_mut();
+	let mut player = player_query.single_mut();
+	let velocity = velocity_query.single();
 
 	let mut movement = 0.0;
 
 	if input.pressed(KeyCode::ArrowRight) {
-		movement += time.delta_seconds() * PLAYER_CONFIG.player_velocity_x;
+		movement += time.delta_seconds() * velocity.x;
 	}
 
 	if input.pressed(KeyCode::ArrowLeft) {
-		movement += time.delta_seconds() * PLAYER_CONFIG.player_velocity_x * -1.0;
+		movement += time.delta_seconds() * velocity.x * -1.0;
 	}
 
 	if let Some(mut translation) = player.translation {
@@ -240,15 +243,16 @@ fn rise(
 
 fn fall(
 	time: Res<Time>,
-	mut query: Query<&mut KinematicCharacterController, Without<Jump>>,
+	mut player_query: Query<&mut KinematicCharacterController, Without<Jump>>,
+	velocity_query: Query<&Velocity, With<Player>>,
 ) {
-	if query.is_empty() {
+	if player_query.is_empty() {
 		return;
 	}
 
-	let mut player = query.single_mut();
-	let movement =
-		time.delta().as_secs_f32() * (PLAYER_CONFIG.player_velocity_y / 1.5) * -1.0;
+	let mut player = player_query.single_mut();
+	let velocity = velocity_query.single();
+	let movement = time.delta().as_secs_f32() * (velocity.y / 1.5) * -1.0;
 
 	match player.translation {
 		Some(vec) => player.translation = Some(Vec2::new(vec.x, movement)),

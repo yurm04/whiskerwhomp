@@ -2,6 +2,7 @@ use bevy::{prelude::*, window::WindowResolution};
 use bevy_rapier2d::prelude::*;
 
 mod animation;
+mod character;
 mod platforms;
 mod player;
 
