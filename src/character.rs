@@ -9,6 +9,12 @@ pub enum Direction {
 	Left,
 }
 
+#[derive(Component, Copy, Clone)]
+pub struct Velocity {
+	pub x: f32,
+	pub y: f32,
+}
+
 pub struct DefaultCharacterConfig {
 	starting_x: f32,
 	starting_y: f32,
@@ -17,12 +23,6 @@ pub struct DefaultCharacterConfig {
 	cycle_delay: Duration,
 	velocity: Velocity,
 	direction: Direction,
-}
-
-#[derive(Component, Copy, Clone)]
-pub struct Velocity {
-	pub x: f32,
-	pub y: f32,
 }
 
 pub static DEFAULT_CHARACTER_CONFIG: DefaultCharacterConfig =
