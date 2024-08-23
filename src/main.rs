@@ -3,10 +3,12 @@ use bevy_rapier2d::prelude::*;
 
 mod animation;
 mod character;
+mod input;
 mod platforms;
 mod player;
 
 use animation::AnimationPlugin;
+use input::InputPlugin;
 use platforms::PlatformsPlugin;
 use player::PlayerPlugin;
 
@@ -52,6 +54,7 @@ fn main() {
 		.add_plugins(PlatformsPlugin)
 		.add_plugins(PlayerPlugin)
 		.add_plugins(AnimationPlugin)
+		.add_plugins(InputPlugin)
 		.add_systems(Startup, setup)
 		.run();
 }

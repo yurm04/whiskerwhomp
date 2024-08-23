@@ -58,7 +58,6 @@ impl Plugin for PlayerPlugin {
 	fn build(&self, app: &mut App) {
 		app
 			.add_systems(Startup, setup)
-			.add_systems(Update, movement)
 			.add_systems(Update, jump)
 			.add_systems(Update, rise)
 			.add_systems(Update, fall)
@@ -72,7 +71,7 @@ impl Plugin for PlayerPlugin {
 }
 
 #[derive(Component)]
-struct Player {}
+pub struct Player {}
 
 fn setup(
 	mut commands: Commands,
@@ -130,33 +129,6 @@ fn setup(
 			..default()
 		},
 	));
-}
-
-fn movement(
-	input: Res<ButtonInput<KeyCode>>,
-	time: Res<Time>,
-	mut player_query: Query<&mut KinematicCharacterController>,
-	velocity_query: Query<&Velocity, With<Player>>,
-) {
-	let mut player = player_query.single_mut();
-	let velocity = velocity_query.single();
-
-	let mut movement = 0.0;
-
-	if input.pressed(KeyCode::ArrowRight) {
-		movement += time.delta_seconds() * velocity.x;
-	}
-
-	if input.pressed(KeyCode::ArrowLeft) {
-		movement += time.delta_seconds() * velocity.x * -1.0;
-	}
-
-	if let Some(mut translation) = player.translation {
-		translation.x = movement;
-		player.translation = Some(translation);
-	} else {
-		player.translation = Some(Vec2::new(movement, 0.0));
-	}
 }
 
 #[derive(Component)]
