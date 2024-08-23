@@ -1,13 +1,17 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-use crate::{character::Velocity, player::Player};
+use crate::{
+	character::Velocity,
+	movement::Jump,
+	player::{Player, PLAYER_CONFIG},
+};
 
 pub struct InputPlugin;
 
 impl Plugin for InputPlugin {
 	fn build(&self, app: &mut App) {
-		app.add_systems(Update, movement_input);
+		app.add_systems(Update, movement_input).add_systems(Update, jump_input);
 	}
 }
 
@@ -35,5 +39,29 @@ fn movement_input(
 		player.translation = Some(translation);
 	} else {
 		player.translation = Some(Vec2::new(movement, 0.0));
+	}
+}
+
+#[allow(clippy::type_complexity)]
+fn jump_input(
+	input: Res<ButtonInput<KeyCode>>,
+	mut commands: Commands,
+	query: Query<
+		(Entity, &KinematicCharacterControllerOutput),
+		With<KinematicCharacterController>,
+	>,
+) {
+	if query.is_empty() {
+		return;
+	}
+
+	let (player, output) = query.single();
+
+	if input.pressed(KeyCode::ArrowUp) && output.grounded {
+		commands.entity(player).insert(Jump {
+			total: 0.0,
+			duration: PLAYER_CONFIG.jump_duration,
+			max_height: PLAYER_CONFIG.max_jump_height,
+		});
 	}
 }
