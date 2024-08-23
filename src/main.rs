@@ -2,6 +2,7 @@ use bevy::{prelude::*, window::WindowResolution};
 use bevy_rapier2d::prelude::*;
 
 mod animation;
+mod camera;
 mod character;
 mod input;
 mod movement;
@@ -9,6 +10,7 @@ mod platforms;
 mod player;
 
 use animation::AnimationPlugin;
+use camera::CameraPlugin;
 use input::InputPlugin;
 use movement::MovementPlugin;
 use platforms::PlatformsPlugin;
@@ -58,13 +60,12 @@ fn main() {
 		.add_plugins(AnimationPlugin)
 		.add_plugins(InputPlugin)
 		.add_plugins(MovementPlugin)
+		.add_plugins(CameraPlugin)
 		.add_systems(Startup, setup)
 		.run();
 }
 
 fn setup(mut commands: Commands) {
-	commands.spawn(Camera2dBundle::default());
-
 	commands
 		.spawn(SpriteBundle {
 			sprite: Sprite {

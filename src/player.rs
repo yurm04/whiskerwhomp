@@ -62,8 +62,7 @@ impl Plugin for PlayerPlugin {
 			.add_systems(Update, apply_idle_animation)
 			.add_systems(Update, apply_jumping_animation)
 			.add_systems(Update, update_direction)
-			.add_systems(Update, update_sprite_direction)
-			.add_systems(Update, camera_follow_system);
+			.add_systems(Update, update_sprite_direction);
 	}
 }
 
@@ -194,30 +193,5 @@ fn update_sprite_direction(mut query: Query<(&mut Sprite, &Direction)>) {
 	match direction {
 		Direction::Right => sprite.flip_x = false,
 		Direction::Left => sprite.flip_x = true,
-	}
-}
-
-fn camera_follow_system(
-	player_query: Query<&Transform, With<KinematicCharacterControllerOutput>>,
-	mut camera_query: Query<
-		&mut Transform,
-		(With<Camera>, Without<KinematicCharacterControllerOutput>),
-	>,
-) {
-	if let Ok(player_transform) = player_query.get_single() {
-		if let Ok(mut camera_transform) = camera_query.get_single_mut() {
-			let player_x = player_transform.translation.x;
-			let camera_x = camera_transform.translation.x;
-			let left_bound = camera_x - (CONFIG.window_width / 2.)
-				+ PLAYER_CONFIG.camera_edge_boundary;
-			let right_bound = camera_x + (CONFIG.window_width / 2.)
-				- PLAYER_CONFIG.camera_edge_boundary;
-
-			if player_x > right_bound {
-				camera_transform.translation.x += player_x - right_bound;
-			} else if player_x < left_bound {
-				camera_transform.translation.x += player_x - left_bound;
-			}
-		}
 	}
 }
