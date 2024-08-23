@@ -67,7 +67,7 @@ fn rise(
 		CONTROL_POINTS[3].1,
 	) * jump_height;
 
-	// Update the player's vertical position
+	// Update the character's vertical position
 	match character.translation {
 		Some(vec) => character.translation = Some(Vec2::new(vec.x, new_height)),
 		None => character.translation = Some(Vec2::new(0.0, new_height)),
@@ -86,12 +86,12 @@ fn fall(
 		return;
 	}
 
-	let mut player = character_query.single_mut();
+	let mut character = character_query.single_mut();
 	let velocity = velocity_query.single();
 	let movement = time.delta().as_secs_f32() * (velocity.y / 1.5) * -1.0;
 
-	match player.translation {
-		Some(vec) => player.translation = Some(Vec2::new(vec.x, movement)),
-		None => player.translation = Some(Vec2::new(0.0, movement)),
+	match character.translation {
+		Some(vec) => character.translation = Some(Vec2::new(vec.x, movement)),
+		None => character.translation = Some(Vec2::new(0.0, movement)),
 	}
 }
