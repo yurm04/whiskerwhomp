@@ -1,11 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-use crate::{
-	character::Velocity,
-	movement::Jump,
-	player::{Player, PLAYER_CONFIG},
-};
+use crate::{character::Velocity, movement::Jump, player::Player};
 
 pub struct InputPlugin;
 
@@ -60,8 +56,7 @@ fn jump_input(
 	if input.pressed(KeyCode::ArrowUp) && output.grounded {
 		commands.entity(player).insert(Jump {
 			total: 0.0,
-			duration: PLAYER_CONFIG.jump_duration,
-			max_height: PLAYER_CONFIG.max_jump_height,
+			max_height: 550.,
 		});
 	}
 }
