@@ -74,7 +74,7 @@ impl Default for CharacterBundle {
 				layout: Handle::default(),
 				index: 0,
 			},
-			body: RigidBody::KinematicPositionBased,
+			body: RigidBody::Dynamic,
 			collider: Collider::cuboid(
 				DEFAULT_CHARACTER_CONFIG.sprite_render_width / 2.0,
 				DEFAULT_CHARACTER_CONFIG.sprite_render_height / 2.0,
