@@ -1,95 +1,75 @@
-use bevy::{prelude::*, window::WindowResolution};
-use bevy_rapier2d::prelude::*;
-
-mod animation;
-mod camera;
-mod character;
-mod input;
-mod movement;
-mod platforms;
-mod player;
-
-use animation::AnimationPlugin;
-use camera::CameraPlugin;
-use input::InputPlugin;
-use movement::MovementPlugin;
-use platforms::PlatformsPlugin;
-use player::PlayerPlugin;
-
-pub struct Config {
-	window_width: f32,
-	window_height: f32,
-	pub window_bottom_y: f32,
-	pub window_left_x: f32,
-	floor_thickness: f32,
-	color_background: Color,
-	color_floor: Color,
-	title: &'static str,
-}
-
-pub static CONFIG: Config = Config {
-	window_width: 1024.0,
-	window_height: 720.0,
-	window_bottom_y: 720.0 / -2.0,
-	window_left_x: 1024.0 / -2.0,
-	floor_thickness: 5.0,
-	color_background: Color::srgb(0.13, 0.13, 0.23),
-	color_floor: Color::srgb(0.45, 0.55, 0.66),
-	title: "Whiskerwhomp",
+use bevy::{
+	prelude::*,
+	window::{Window, WindowPlugin, WindowResolution},
 };
+
+const SCREEN_WIDTH: u32 = 800;
+const SCREEN_HEIGHT: u32 = 600;
+
+#[derive(Component)]
+struct Player;
+
+fn move_player(
+	input: Res<ButtonInput<KeyCode>>,
+	time: Res<Time>,
+	window: Single<&Window>,
+	mut player_transform: Single<&mut Transform, With<Player>>,
+) {
+	let mut direction = Vec2::ZERO;
+
+	if input.pressed(KeyCode::ArrowLeft) {
+		direction.x -= 1.0;
+	}
+	if input.pressed(KeyCode::ArrowRight) {
+		direction.x += 1.0;
+	}
+	if input.pressed(KeyCode::ArrowUp) {
+		direction.y += 1.0;
+	}
+	if input.pressed(KeyCode::ArrowDown) {
+		direction.y -= 1.0;
+	}
+
+	if direction != Vec2::ZERO {
+		let speed = 300.0;
+		let max_x = window.width() / 2.0;
+		let max_y = window.height() / 2.0;
+		let delta = direction.normalize() * speed * time.delta_secs();
+		player_transform.translation.x =
+			(player_transform.translation.x + delta.x).clamp(-max_x, max_x);
+		player_transform.translation.y =
+			(player_transform.translation.y + delta.y).clamp(-max_y, max_y);
+	}
+}
 
 fn main() {
 	App::new()
-		.insert_resource(ClearColor(CONFIG.color_background))
 		.add_plugins(DefaultPlugins.set(WindowPlugin {
 			primary_window: Some(Window {
-				title: CONFIG.title.to_string(),
-				resolution: WindowResolution::new(
-					CONFIG.window_width,
-					CONFIG.window_height,
-				),
+				title: "Whisker Whomper".into(),
+				resolution: WindowResolution::new(SCREEN_WIDTH, SCREEN_HEIGHT),
 				resizable: true,
-				..Default::default()
+				..default()
 			}),
-			..Default::default()
+			..default()
 		}))
-		.add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(200.0))
-		.add_plugins(RapierDebugRenderPlugin::default())
-		.add_plugins(PlatformsPlugin)
-		.add_plugins(PlayerPlugin)
-		.add_plugins(AnimationPlugin)
-		.add_plugins(InputPlugin)
-		.add_plugins(MovementPlugin)
-		.add_plugins(CameraPlugin)
 		.add_systems(Startup, setup)
+		.add_systems(Update, move_player)
 		.run();
 }
 
 fn setup(mut commands: Commands) {
-	commands
-		.spawn(SpriteBundle {
-			sprite: Sprite {
-				color: CONFIG.color_floor,
-				custom_size: Some(Vec2::new(
-					CONFIG.window_width * 100.0,
-					CONFIG.floor_thickness,
-				)),
-				..Default::default()
-			},
-			transform: Transform {
-				translation: Vec3::new(
-					0.0,
-					CONFIG.window_bottom_y + (CONFIG.floor_thickness / 2.0),
-					1.0,
-				),
-				scale: Vec3::new(1.0, 1.0, 1.0),
-				..Default::default()
-			},
-			..Default::default()
-		})
-		.insert(RigidBody::Fixed)
-		.insert(Collider::cuboid(
-			CONFIG.window_width * 50.0,
-			CONFIG.floor_thickness / 2.0,
-		));
+	commands.spawn(Camera2d);
+
+	commands.spawn((
+		Text2d::new("ME!"),
+		TextFont {
+			font_size: 12.0,
+			font: default(),
+			..default()
+		},
+		TextColor(Color::WHITE),
+		Transform::from_translation(Vec3::ZERO),
+		Player,
+	));
 }
