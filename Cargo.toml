@@ -1,11 +1,11 @@
 [package]
 name = "whiskerwhomp"
-version = "0.1.0"
-edition = "2021"
+version = "1.0.0"
+edition = "2024"
 
 [dependencies]
-bevy = { version = "0.14", features = ["dynamic_linking"] }
-bevy_rapier2d = "0.27"
+bevy = { version = "0.18", features = ["dynamic_linking"] }
+avian2d = "0.6"
 
 [profile.dev]
 opt-level = 1

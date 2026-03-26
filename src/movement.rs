@@ -1,65 +1,66 @@
+use avian2d::prelude::*;
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::*;
 
-use crate::character::Velocity;
+use crate::character::{GroundSensor, Grounded, Velocity};
 
 pub struct MovementPlugin;
 
 impl Plugin for MovementPlugin {
 	fn build(&self, app: &mut App) {
-		app.add_systems(Update, rise).add_systems(Update, fall);
+		app.add_systems(Update, (ground_detection, rise, fall).chain());
 	}
 }
 
 #[derive(Component)]
 pub struct Jump {
-	pub total: f32,
+	pub start_y: f32,
 	pub max_height: f32,
+}
+
+fn ground_detection(
+	sensor_query: Query<(&ChildOf, &CollidingEntities), With<GroundSensor>>,
+	mut player_query: Query<&mut Grounded>,
+) {
+	for (child_of, colliding) in sensor_query.iter() {
+		if let Ok(mut grounded) = player_query.get_mut(child_of.parent()) {
+			grounded.0 = !colliding.is_empty();
+		}
+	}
 }
 
 fn rise(
 	mut commands: Commands,
-	time: Res<Time>,
-	mut query: Query<(Entity, &mut KinematicCharacterController, &mut Jump)>,
-	velocity_query: Query<&Velocity>,
+	mut query: Query<(Entity, &Transform, &mut LinearVelocity, &Jump, &Velocity)>,
 ) {
-	if query.is_empty() {
+	let Ok((entity, transform, mut lin_vel, jump, velocity)) = query.single_mut()
+	else {
 		return;
-	}
+	};
 
-	let (entity, mut character, mut jump) = query.single_mut();
-	let velocity = velocity_query.single();
+	let current_height = transform.translation.y - jump.start_y;
 
-	let mut movement = time.delta().as_secs_f32() * velocity.y;
-
-	if movement + jump.total >= jump.max_height {
-		movement = jump.max_height - jump.total;
+	if current_height >= jump.max_height {
 		commands.entity(entity).remove::<Jump>();
-	}
-
-	jump.total += movement;
-
-	match character.translation {
-		Some(vec) => character.translation = Some(Vec2::new(vec.x, movement)),
-		None => character.translation = Some(Vec2::new(0.0, movement)),
+		lin_vel.y = 0.0;
+	} else {
+		lin_vel.y = velocity.y;
 	}
 }
 
 fn fall(
-	time: Res<Time>,
-	mut character_query: Query<&mut KinematicCharacterController, Without<Jump>>,
-	velocity_query: Query<&Velocity>,
+	mut query: Query<(&mut LinearVelocity, &Velocity, &Grounded), Without<Jump>>,
 ) {
-	if character_query.is_empty() {
+	let Ok((mut lin_vel, velocity, grounded)) = query.single_mut() else {
 		return;
-	}
+	};
 
-	let mut character = character_query.single_mut();
-	let velocity = velocity_query.single();
-	let movement = time.delta().as_secs_f32() * (velocity.y / 1.5) * -1.0;
-
-	match character.translation {
-		Some(vec) => character.translation = Some(Vec2::new(vec.x, movement)),
-		None => character.translation = Some(Vec2::new(0.0, movement)),
+	if grounded.0 {
+		// Only zero out if we're actually moving downward — don't fight
+		// the solver when it's already resolved the contact.
+		if lin_vel.y < 0.0 {
+			lin_vel.y = 0.0;
+		}
+	} else {
+		lin_vel.y = -(velocity.y / 1.5);
 	}
 }

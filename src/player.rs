@@ -1,11 +1,11 @@
+use avian2d::prelude::*;
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::*;
 use std::time::Duration;
 
 use crate::{
-	animation::Animation,
-	character::{CharacterBundle, Direction, Velocity},
 	CONFIG,
+	animation::Animation,
+	character::{CharacterBundle, Direction, GroundSensor, Grounded, Velocity},
 };
 
 pub struct PlayerConfig {
@@ -52,13 +52,10 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
 	fn build(&self, app: &mut App) {
-		app
-			.add_systems(Startup, setup)
-			.add_systems(Update, apply_movement_animation)
-			.add_systems(Update, apply_idle_animation)
-			.add_systems(Update, apply_jumping_animation)
-			.add_systems(Update, update_direction)
-			.add_systems(Update, update_sprite_direction);
+		app.add_systems(Startup, setup).add_systems(
+			Update,
+			(update_animation, update_direction, update_sprite_direction),
+		);
 	}
 }
 
@@ -71,7 +68,7 @@ fn setup(
 	server: Res<AssetServer>,
 ) {
 	let image_handle: Handle<Image> = server.load(PLAYER_CONFIG.sprite_path);
-	let texture_atlas = TextureAtlasLayout::from_grid(
+	let texture_atlas_layout = TextureAtlasLayout::from_grid(
 		UVec2::new(
 			PLAYER_CONFIG.sprite_tile_width as u32,
 			PLAYER_CONFIG.sprite_tile_height as u32,
@@ -81,110 +78,90 @@ fn setup(
 		None,
 		None,
 	);
-	let atlas_handle = atlases.add(texture_atlas);
+	let atlas_handle = atlases.add(texture_atlas_layout);
 
-	commands.spawn((
-		Player {},
-		CharacterBundle {
-			sprite: SpriteBundle {
+	commands
+		.spawn((
+			Player {},
+			CharacterBundle {
 				sprite: Sprite {
+					image: image_handle,
 					custom_size: Some(Vec2::new(
 						PLAYER_CONFIG.sprite_render_width,
 						PLAYER_CONFIG.sprite_render_height,
 					)),
-					..Default::default()
-				},
-				texture: image_handle,
-				transform: Transform {
-					translation: Vec3::new(
-						PLAYER_CONFIG.player_starting_x,
-						PLAYER_CONFIG.player_starting_y,
-						1.0,
-					),
-					scale: Vec3::new(1.0, 1.0, 1.0),
+					texture_atlas: Some(TextureAtlas {
+						layout: atlas_handle,
+						index: PLAYER_CONFIG.sprite_idx_stand,
+					}),
 					..default()
+				},
+				transform: Transform::from_xyz(
+					PLAYER_CONFIG.player_starting_x,
+					PLAYER_CONFIG.player_starting_y,
+					1.0,
+				),
+				animation: Animation::new(
+					PLAYER_CONFIG.sprite_idx_idle,
+					PLAYER_CONFIG.cycle_delay,
+				),
+				velocity: Velocity {
+					x: PLAYER_CONFIG.player_velocity_x,
+					y: PLAYER_CONFIG.player_velocity_y,
 				},
 				..default()
 			},
-			texture_atlas: TextureAtlas {
-				layout: atlas_handle,
-				index: PLAYER_CONFIG.sprite_idx_stand,
-			},
-			animation: Animation::new(
-				PLAYER_CONFIG.sprite_idx_idle,
-				PLAYER_CONFIG.cycle_delay,
-			),
-			velocity: Velocity {
-				x: PLAYER_CONFIG.player_velocity_x,
-				y: PLAYER_CONFIG.player_velocity_y,
-			},
-			..default()
-		},
-	));
+		))
+		.with_children(|parent| {
+			parent.spawn((
+				Transform::from_xyz(
+					0.0,
+					-PLAYER_CONFIG.sprite_render_height / 2.0 - 2.0,
+					0.0,
+				),
+				Collider::rectangle(PLAYER_CONFIG.sprite_render_width * 0.8, 4.0),
+				Sensor,
+				GroundSensor,
+				CollidingEntities::default(),
+			));
+		});
 }
 
-fn apply_movement_animation(
-	mut query: Query<(&KinematicCharacterControllerOutput, &mut Animation)>,
+fn update_animation(
+	mut query: Query<(&LinearVelocity, &Grounded, &mut Animation), With<Player>>,
 ) {
-	if query.is_empty() {
+	let Ok((lin_vel, grounded, mut animation)) = query.single_mut() else {
 		return;
-	}
+	};
 
-	let (output, mut animation) = query.single_mut();
-	if output.desired_translation.x != 0.0 && output.grounded {
-		animation.sprites = PLAYER_CONFIG.sprite_idx_walking;
-	}
-}
-
-fn apply_idle_animation(
-	mut query: Query<(&KinematicCharacterControllerOutput, &mut Animation)>,
-) {
-	if query.is_empty() {
-		return;
-	}
-
-	let (output, mut animation) = query.single_mut();
-	if output.desired_translation.x == 0.0 && output.grounded {
-		animation.sprites = PLAYER_CONFIG.sprite_idx_idle;
-	}
-}
-
-fn apply_jumping_animation(
-	mut query: Query<(&KinematicCharacterControllerOutput, &mut Animation)>,
-) {
-	if query.is_empty() {
-		return;
-	}
-
-	let (output, mut animation) = query.single_mut();
-	if !output.grounded {
+	if !grounded.0 {
 		animation.sprites = PLAYER_CONFIG.sprite_idx_jumping;
+	} else if lin_vel.x.abs() > 1.0 {
+		animation.sprites = PLAYER_CONFIG.sprite_idx_walking;
+	} else {
+		animation.sprites = PLAYER_CONFIG.sprite_idx_idle;
 	}
 }
 
 fn update_direction(
 	mut commands: Commands,
-	query: Query<(Entity, &KinematicCharacterControllerOutput)>,
+	query: Query<(Entity, &LinearVelocity), With<Player>>,
 ) {
-	if query.is_empty() {
+	let Ok((player, lin_vel)) = query.single() else {
 		return;
-	}
+	};
 
-	let (player, output) = query.single();
-
-	if output.desired_translation.x > 0.0 {
+	if lin_vel.x > 1.0 {
 		commands.entity(player).insert(Direction::Right);
-	} else if output.desired_translation.x < 0.0 {
+	} else if lin_vel.x < -1.0 {
 		commands.entity(player).insert(Direction::Left);
 	}
 }
 
 fn update_sprite_direction(mut query: Query<(&mut Sprite, &Direction)>) {
-	if query.is_empty() {
+	let Ok((mut sprite, direction)) = query.single_mut() else {
 		return;
-	}
-
-	let (mut sprite, direction) = query.single_mut();
+	};
 
 	match direction {
 		Direction::Right => sprite.flip_x = false,

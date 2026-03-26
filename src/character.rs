@@ -1,6 +1,6 @@
 use crate::animation::Animation;
+use avian2d::prelude::*;
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::*;
 use std::time::Duration;
 
 #[derive(Component, Copy, Clone)]
@@ -14,6 +14,12 @@ pub struct Velocity {
 	pub x: f32,
 	pub y: f32,
 }
+
+#[derive(Component, Default)]
+pub struct Grounded(pub bool);
+
+#[derive(Component)]
+pub struct GroundSensor;
 
 pub struct DefaultCharacterConfig {
 	starting_x: f32,
@@ -38,51 +44,46 @@ pub static DEFAULT_CHARACTER_CONFIG: DefaultCharacterConfig =
 
 #[derive(Bundle)]
 pub struct CharacterBundle {
-	pub sprite: SpriteBundle,
+	pub sprite: Sprite,
+	pub transform: Transform,
 	pub animation: Animation,
-	pub texture_atlas: TextureAtlas,
 	pub body: RigidBody,
 	pub collider: Collider,
-	pub controller: KinematicCharacterController,
+	pub locked_axes: LockedAxes,
+	pub gravity_scale: GravityScale,
+	pub linear_velocity: LinearVelocity,
 	pub velocity: Velocity,
 	pub direction: Direction,
+	pub grounded: Grounded,
 }
 
 impl Default for CharacterBundle {
 	fn default() -> Self {
 		Self {
-			sprite: SpriteBundle {
-				sprite: Sprite {
-					custom_size: Some(Vec2::new(
-						DEFAULT_CHARACTER_CONFIG.sprite_render_width,
-						DEFAULT_CHARACTER_CONFIG.sprite_render_height,
-					)),
-					..default()
-				},
-				transform: Transform {
-					translation: Vec3::new(
-						DEFAULT_CHARACTER_CONFIG.starting_x,
-						DEFAULT_CHARACTER_CONFIG.starting_y,
-						1.0,
-					),
-					scale: Vec3::new(1.0, 1.0, 1.0),
-					..default()
-				},
+			sprite: Sprite {
+				custom_size: Some(Vec2::new(
+					DEFAULT_CHARACTER_CONFIG.sprite_render_width,
+					DEFAULT_CHARACTER_CONFIG.sprite_render_height,
+				)),
 				..default()
 			},
-			texture_atlas: TextureAtlas {
-				layout: Handle::default(),
-				index: 0,
-			},
-			body: RigidBody::Dynamic,
-			collider: Collider::cuboid(
-				DEFAULT_CHARACTER_CONFIG.sprite_render_width / 2.0,
-				DEFAULT_CHARACTER_CONFIG.sprite_render_height / 2.0,
+			transform: Transform::from_xyz(
+				DEFAULT_CHARACTER_CONFIG.starting_x,
+				DEFAULT_CHARACTER_CONFIG.starting_y,
+				1.0,
 			),
-			controller: KinematicCharacterController::default(),
+			body: RigidBody::Dynamic,
+			collider: Collider::rectangle(
+				DEFAULT_CHARACTER_CONFIG.sprite_render_width,
+				DEFAULT_CHARACTER_CONFIG.sprite_render_height,
+			),
+			locked_axes: LockedAxes::ROTATION_LOCKED,
+			gravity_scale: GravityScale(0.0),
+			linear_velocity: LinearVelocity::ZERO,
 			animation: Animation::new(&[0], DEFAULT_CHARACTER_CONFIG.cycle_delay),
 			velocity: DEFAULT_CHARACTER_CONFIG.velocity,
 			direction: DEFAULT_CHARACTER_CONFIG.direction,
+			grounded: Grounded(false),
 		}
 	}
 }

@@ -1,7 +1,11 @@
+use avian2d::prelude::*;
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::*;
 
-use crate::{character::Velocity, movement::Jump, player::Player};
+use crate::{
+	character::{Grounded, Velocity},
+	movement::Jump,
+	player::Player,
+};
 
 pub struct InputPlugin;
 
@@ -13,49 +17,39 @@ impl Plugin for InputPlugin {
 
 fn movement_input(
 	input: Res<ButtonInput<KeyCode>>,
-	time: Res<Time>,
-	mut player_query: Query<&mut KinematicCharacterController>,
-	velocity_query: Query<&Velocity, With<Player>>,
+	mut query: Query<(&mut LinearVelocity, &Velocity), With<Player>>,
 ) {
-	let mut player = player_query.single_mut();
-	let velocity = velocity_query.single();
+	if let Ok((mut lin_vel, velocity)) = query.single_mut() {
+		let mut movement = 0.0;
 
-	let mut movement = 0.0;
+		if input.pressed(KeyCode::ArrowRight) {
+			movement += velocity.x;
+		}
 
-	if input.pressed(KeyCode::ArrowRight) {
-		movement += time.delta_seconds() * velocity.x;
-	}
+		if input.pressed(KeyCode::ArrowLeft) {
+			movement -= velocity.x;
+		}
 
-	if input.pressed(KeyCode::ArrowLeft) {
-		movement += time.delta_seconds() * velocity.x * -1.0;
-	}
-
-	if let Some(mut translation) = player.translation {
-		translation.x = movement;
-		player.translation = Some(translation);
-	} else {
-		player.translation = Some(Vec2::new(movement, 0.0));
+		lin_vel.x = movement;
 	}
 }
 
-#[allow(clippy::type_complexity)]
 fn jump_input(
 	input: Res<ButtonInput<KeyCode>>,
 	mut commands: Commands,
-	query: Query<
-		(Entity, &KinematicCharacterControllerOutput),
-		With<KinematicCharacterController>,
-	>,
+	query: Query<(Entity, &Transform, &Grounded), With<Player>>,
 ) {
 	if query.is_empty() {
 		return;
 	}
 
-	let (player, output) = query.single();
+	let Ok((player, transform, grounded)) = query.single() else {
+		return;
+	};
 
-	if input.pressed(KeyCode::ArrowUp) && output.grounded {
+	if input.pressed(KeyCode::ArrowUp) && grounded.0 {
 		commands.entity(player).insert(Jump {
-			total: 0.0,
+			start_y: transform.translation.y,
 			max_height: 550.,
 		});
 	}

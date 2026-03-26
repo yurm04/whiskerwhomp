@@ -25,19 +25,18 @@ impl Plugin for AnimationPlugin {
 	}
 }
 
-fn animate(
-	mut query: Query<(&mut TextureAtlas, &mut Animation)>,
-	time: Res<Time>,
-) {
+fn animate(mut query: Query<(&mut Sprite, &mut Animation)>, time: Res<Time>) {
 	for (mut sprite, mut animation) in query.iter_mut() {
-		if animation.timer.tick(time.delta()).just_finished() {
+		if animation.timer.tick(time.delta()).just_finished()
+			&& let Some(ref mut atlas) = sprite.texture_atlas
+		{
 			let current_idx =
-				animation.sprites.iter().position(|s| *s == sprite.index).unwrap_or(0); // default to 0 if the current sprite is not in the set
+				animation.sprites.iter().position(|s| *s == atlas.index).unwrap_or(0);
 
 			let next_idx = (current_idx
 				+ animation.timer.times_finished_this_tick() as usize)
 				% animation.sprites.len();
-			sprite.index = animation.sprites[next_idx];
+			atlas.index = animation.sprites[next_idx];
 		}
 	}
 }
