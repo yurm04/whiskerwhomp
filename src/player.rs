@@ -22,7 +22,8 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
 	fn build(&self, app: &mut App) {
-		app.add_systems(Startup, setup)
+		app
+			.add_systems(Startup, setup)
 			.add_systems(Update, (ground_detection, handle_input, update_animation));
 	}
 }
