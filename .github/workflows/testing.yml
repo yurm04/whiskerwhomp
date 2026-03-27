@@ -74,7 +74,7 @@ jobs:
 
       - name: Install ubuntu dependencies
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0
+        run: sudo apt-get update && sudo apt-get install -y g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0
 
       - name: Run check
         run: cargo check
@@ -109,7 +109,7 @@ jobs:
 
       - name: Install ubuntu dependencies
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0
+        run: sudo apt-get update && sudo apt-get install -y g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0
 
       - name: Fetch dependencies
         run: cargo fetch --locked
@@ -145,7 +145,7 @@ jobs:
 
       - name: Install ubuntu dependencies
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0
+        run: sudo apt-get update && sudo apt-get install -y g++ pkg-config libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0
 
       - name: Build
         run: cargo build
