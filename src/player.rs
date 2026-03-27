@@ -32,7 +32,7 @@ pub static PLAYER_CONFIG: PlayerConfig = PlayerConfig {
 	player_starting_x: CONFIG.window_left_x + 100.0,
 	player_starting_y: CONFIG.window_bottom_y + 300.0,
 	player_velocity_x: 400.0,
-	player_velocity_y: 850.0,
+	player_velocity_y: 700.0,
 	spritesheet_cols: 8,
 	spritesheet_rows: 10,
 	sprite_path: "spritesheets/cat_sprite.png",
@@ -135,7 +135,26 @@ fn update_animation(
 	};
 
 	if !grounded.0 {
-		animation.sprites = PLAYER_CONFIG.sprite_idx_jumping;
+		// Map vertical velocity to a specific jump frame instead of cycling.
+		// Early frames = launch, middle = peak, late = landing.
+		let frames = PLAYER_CONFIG.sprite_idx_jumping;
+		let i = if lin_vel.y > 400.0 {
+			0
+		} else if lin_vel.y > 200.0 {
+			1
+		} else if lin_vel.y > 50.0 {
+			2
+		} else if lin_vel.y > -50.0 {
+			3 // peak
+		} else if lin_vel.y > -200.0 {
+			4
+		} else if lin_vel.y > -400.0 {
+			5
+		} else {
+			6
+		};
+		// Single-element slice keeps the animate system from cycling.
+		animation.sprites = &frames[i..=i];
 	} else if lin_vel.x.abs() > 1.0 {
 		animation.sprites = PLAYER_CONFIG.sprite_idx_walking;
 	} else {

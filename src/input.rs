@@ -3,7 +3,6 @@ use bevy::prelude::*;
 
 use crate::{
 	character::{Grounded, Velocity},
-	movement::Jump,
 	player::Player,
 };
 
@@ -11,7 +10,7 @@ pub struct InputPlugin;
 
 impl Plugin for InputPlugin {
 	fn build(&self, app: &mut App) {
-		app.add_systems(Update, movement_input).add_systems(Update, jump_input);
+		app.add_systems(Update, (movement_input, jump_input));
 	}
 }
 
@@ -36,21 +35,13 @@ fn movement_input(
 
 fn jump_input(
 	input: Res<ButtonInput<KeyCode>>,
-	mut commands: Commands,
-	query: Query<(Entity, &Transform, &Grounded), With<Player>>,
+	mut query: Query<(&mut LinearVelocity, &Velocity, &Grounded), With<Player>>,
 ) {
-	if query.is_empty() {
-		return;
-	}
-
-	let Ok((player, transform, grounded)) = query.single() else {
+	let Ok((mut lin_vel, velocity, grounded)) = query.single_mut() else {
 		return;
 	};
 
 	if input.pressed(KeyCode::ArrowUp) && grounded.0 {
-		commands.entity(player).insert(Jump {
-			start_y: transform.translation.y,
-			max_height: 550.,
-		});
+		lin_vel.y = velocity.y;
 	}
 }

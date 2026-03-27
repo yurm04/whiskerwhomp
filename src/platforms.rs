@@ -27,7 +27,7 @@ fn spawn_platform(commands: &mut Commands, x: f32, width: f32, height: f32) {
 }
 
 fn setup(mut commands: Commands) {
-	spawn_platform(&mut commands, -100.0, 75.0, 200.0);
-	spawn_platform(&mut commands, 100.0, 50.0, 350.0);
-	spawn_platform(&mut commands, 350.0, 150.0, 220.0);
+	spawn_platform(&mut commands, -100.0, 75.0, 50.0);
+	spawn_platform(&mut commands, 100.0, 50.0, 60.0);
+	spawn_platform(&mut commands, 350.0, 150.0, 30.0);
 }

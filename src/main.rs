@@ -57,6 +57,8 @@ fn main() {
 		}),
 		)
 		.add_plugins(PhysicsPlugins::default())
+		.add_plugins(PhysicsDebugPlugin)
+		.insert_resource(Gravity(Vec2::new(0.0, -3000.0)))
 		.add_plugins(PlatformsPlugin)
 		.add_plugins(PlayerPlugin)
 		.add_plugins(AnimationPlugin)
