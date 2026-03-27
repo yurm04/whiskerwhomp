@@ -59,6 +59,8 @@ fn main() {
 		.add_plugins(PhysicsPlugins::default())
 		.add_plugins(PhysicsDebugPlugin)
 		.insert_resource(Gravity(Vec2::new(0.0, -3000.0)))
+		.add_systems(Startup, disable_physics_debug)
+		.add_systems(Update, toggle_physics_debug)
 		.add_plugins(PlatformsPlugin)
 		.add_plugins(PlayerPlugin)
 		.add_plugins(AnimationPlugin)
@@ -67,6 +69,20 @@ fn main() {
 		.add_plugins(CameraPlugin)
 		.add_systems(Startup, setup)
 		.run();
+}
+
+fn disable_physics_debug(mut store: ResMut<GizmoConfigStore>) {
+	store.config_mut::<PhysicsGizmos>().0.enabled = false;
+}
+
+fn toggle_physics_debug(
+	input: Res<ButtonInput<KeyCode>>,
+	mut store: ResMut<GizmoConfigStore>,
+) {
+	if input.just_pressed(KeyCode::KeyD) {
+		let config = &mut store.config_mut::<PhysicsGizmos>().0;
+		config.enabled = !config.enabled;
+	}
 }
 
 fn setup(mut commands: Commands) {
