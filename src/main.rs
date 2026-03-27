@@ -3,27 +3,21 @@ use bevy::{prelude::*, window::WindowResolution};
 
 mod animation;
 mod camera;
-mod character;
-mod input;
-mod movement;
-mod platforms;
 mod player;
+mod world;
 
 use animation::AnimationPlugin;
 use camera::CameraPlugin;
-use input::InputPlugin;
-use movement::MovementPlugin;
-use platforms::PlatformsPlugin;
 use player::PlayerPlugin;
+use world::WorldPlugin;
 
 pub struct Config {
-	window_width: u32,
-	window_height: u32,
+	pub window_width: u32,
+	pub window_height: u32,
 	pub window_bottom_y: f32,
 	pub window_left_x: f32,
-	floor_thickness: f32,
+	pub floor_thickness: f32,
 	color_background: Color,
-	color_floor: Color,
 	title: &'static str,
 }
 
@@ -34,40 +28,32 @@ pub static CONFIG: Config = Config {
 	window_left_x: 1024.0 / -2.0,
 	floor_thickness: 5.0,
 	color_background: Color::srgb(0.13, 0.13, 0.23),
-	color_floor: Color::srgb(0.45, 0.55, 0.66),
 	title: "Whiskerwhomp",
 };
 
 fn main() {
 	App::new()
 		.insert_resource(ClearColor(CONFIG.color_background))
-		.add_plugins(DefaultPlugins
-			.set(ImagePlugin::default_nearest())
-			.set(WindowPlugin {
-			primary_window: Some(Window {
-				title: CONFIG.title.to_string(),
-				resolution: WindowResolution::new(
-					CONFIG.window_width,
-					CONFIG.window_height,
-				),
-				resizable: true,
+		.add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()).set(
+			WindowPlugin {
+				primary_window: Some(Window {
+					title: CONFIG.title.to_string(),
+					resolution: WindowResolution::new(
+						CONFIG.window_width,
+						CONFIG.window_height,
+					),
+					resizable: true,
+					..Default::default()
+				}),
 				..Default::default()
-			}),
-			..Default::default()
-		}),
-		)
+			},
+		))
 		.add_plugins(PhysicsPlugins::default())
 		.add_plugins(PhysicsDebugPlugin)
 		.insert_resource(Gravity(Vec2::new(0.0, -3000.0)))
 		.add_systems(Startup, disable_physics_debug)
 		.add_systems(Update, toggle_physics_debug)
-		.add_plugins(PlatformsPlugin)
-		.add_plugins(PlayerPlugin)
-		.add_plugins(AnimationPlugin)
-		.add_plugins(InputPlugin)
-		.add_plugins(MovementPlugin)
-		.add_plugins(CameraPlugin)
-		.add_systems(Startup, setup)
+		.add_plugins((WorldPlugin, PlayerPlugin, AnimationPlugin, CameraPlugin))
 		.run();
 }
 
@@ -83,23 +69,4 @@ fn toggle_physics_debug(
 		let config = &mut store.config_mut::<PhysicsGizmos>().0;
 		config.enabled = !config.enabled;
 	}
-}
-
-fn setup(mut commands: Commands) {
-	commands.spawn((
-		Sprite::from_color(
-			CONFIG.color_floor,
-			Vec2::new((CONFIG.window_width * 100) as f32, CONFIG.floor_thickness),
-		),
-		Transform::from_xyz(
-			0.0,
-			CONFIG.window_bottom_y + (CONFIG.floor_thickness / 2.0),
-			1.0,
-		),
-		RigidBody::Static,
-		Collider::rectangle(
-			(CONFIG.window_width * 100) as f32,
-			CONFIG.floor_thickness,
-		),
-	));
 }
