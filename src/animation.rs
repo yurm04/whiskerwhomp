@@ -4,14 +4,16 @@ use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct Animation {
-	pub sprites: &'static [usize],
+	pub frames: &'static [usize],
+	pub current: usize,
 	pub timer: Timer,
 }
 
 impl Animation {
-	pub fn new(sprites: &'static [usize], delay: Duration) -> Self {
+	pub fn new(frames: &'static [usize], delay: Duration) -> Self {
 		Self {
-			sprites,
+			frames,
+			current: 0,
 			timer: Timer::new(delay, TimerMode::Repeating),
 		}
 	}
@@ -25,19 +27,15 @@ impl Plugin for AnimationPlugin {
 	}
 }
 
-fn animate(
-	mut query: Query<(&mut TextureAtlas, &mut Animation)>,
-	time: Res<Time>,
-) {
+fn animate(mut query: Query<(&mut Sprite, &mut Animation)>, time: Res<Time>) {
 	for (mut sprite, mut animation) in query.iter_mut() {
-		if animation.timer.tick(time.delta()).just_finished() {
-			let current_idx =
-				animation.sprites.iter().position(|s| *s == sprite.index).unwrap_or(0); // default to 0 if the current sprite is not in the set
-
-			let next_idx = (current_idx
+		if animation.timer.tick(time.delta()).just_finished()
+			&& let Some(ref mut atlas) = sprite.texture_atlas
+		{
+			animation.current = (animation.current
 				+ animation.timer.times_finished_this_tick() as usize)
-				% animation.sprites.len();
-			sprite.index = animation.sprites[next_idx];
+				% animation.frames.len();
+			atlas.index = animation.frames[animation.current];
 		}
 	}
 }
