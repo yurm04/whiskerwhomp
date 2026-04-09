@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 bevy = { version = "0.18", features = ["dynamic_linking"] }
 avian2d = "0.6"
+rand = "0.9"
 
 [profile.dev]
 opt-level = 1
