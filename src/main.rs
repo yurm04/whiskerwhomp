@@ -2,11 +2,13 @@ use avian2d::prelude::*;
 use bevy::{prelude::*, window::WindowResolution};
 
 mod animation;
+mod background;
 mod camera;
 mod player;
 mod world;
 
 use animation::AnimationPlugin;
+use background::BackgroundPlugin;
 use camera::CameraPlugin;
 use player::PlayerPlugin;
 use world::WorldPlugin;
@@ -53,7 +55,13 @@ fn main() {
 		.insert_resource(Gravity(Vec2::new(0.0, -3000.0)))
 		.add_systems(Startup, disable_physics_debug)
 		.add_systems(Update, toggle_physics_debug)
-		.add_plugins((WorldPlugin, PlayerPlugin, AnimationPlugin, CameraPlugin))
+		.add_plugins((
+			BackgroundPlugin,
+			WorldPlugin,
+			PlayerPlugin,
+			AnimationPlugin,
+			CameraPlugin,
+		))
 		.run();
 }
 
