@@ -2,14 +2,16 @@ use avian2d::prelude::*;
 use bevy::{prelude::*, window::WindowResolution};
 
 mod animation;
-mod background;
 mod camera;
+mod level;
+mod parallax;
 mod player;
 mod world;
 
 use animation::AnimationPlugin;
-use background::BackgroundPlugin;
 use camera::CameraPlugin;
+use level::LevelPlugin;
+use parallax::ParallaxPlugin;
 use player::PlayerPlugin;
 use world::WorldPlugin;
 
@@ -28,7 +30,7 @@ pub static CONFIG: Config = Config {
 	window_height: 720,
 	window_bottom_y: 720.0 / -2.0,
 	window_left_x: 1024.0 / -2.0,
-	floor_thickness: 5.0,
+	floor_thickness: 2.0,
 	color_background: Color::srgb(0.13, 0.13, 0.23),
 	title: "Whiskerwhomp",
 };
@@ -56,8 +58,9 @@ fn main() {
 		.add_systems(Startup, disable_physics_debug)
 		.add_systems(Update, toggle_physics_debug)
 		.add_plugins((
-			BackgroundPlugin,
 			WorldPlugin,
+			LevelPlugin,
+			ParallaxPlugin,
 			PlayerPlugin,
 			AnimationPlugin,
 			CameraPlugin,
