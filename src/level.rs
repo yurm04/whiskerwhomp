@@ -1,29 +1,24 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
 
-use crate::CONFIG;
+use crate::{CONFIG, parallax::ParallaxLayer};
 
 const COLOR_PLATFORM: Color = Color::srgb(0.29, 0.31, 0.41);
-
-#[derive(Component)]
-pub struct ParallaxLayer {
-	pub factor: f32,
-}
 
 #[derive(Debug)]
 enum Level {
 	One,
-	Two,
-	Three,
-	Four,
+	_Two,
+	_Three,
+	_Four,
 }
 
 impl Level {
 	fn get_config(&self) -> LevelConfig {
 		match self {
 			Level::One => LevelConfig {
-				level: 1,
-				name: String::from("Level 1"),
+				_level: 1,
+				_name: String::from("Level 1"),
 				platforms: vec![
 					(-100.0, 75.0, 50.0),
 					(100.0, 50.0, 60.0),
@@ -33,25 +28,25 @@ impl Level {
 				mid_2: vec![(250.0, 250.0, 0.0)],
 				bg: String::from("backgrounds/bg.png"),
 			},
-			Level::Two => LevelConfig {
-				level: 2,
-				name: String::from("Level 2"),
+			Level::_Two => LevelConfig {
+				_level: 2,
+				_name: String::from("Level 2"),
 				platforms: Vec::new(),
 				mid_1: Vec::new(),
 				mid_2: Vec::new(),
 				bg: String::from(""),
 			},
-			Level::Three => LevelConfig {
-				level: 3,
-				name: String::from("Level 3"),
+			Level::_Three => LevelConfig {
+				_level: 3,
+				_name: String::from("Level 3"),
 				platforms: Vec::new(),
 				mid_1: Vec::new(),
 				mid_2: Vec::new(),
 				bg: String::from(""),
 			},
-			Level::Four => LevelConfig {
-				level: 4,
-				name: String::from("Level 4"),
+			Level::_Four => LevelConfig {
+				_level: 4,
+				_name: String::from("Level 4"),
 				platforms: Vec::new(),
 				mid_1: Vec::new(),
 				mid_2: Vec::new(),
@@ -63,8 +58,8 @@ impl Level {
 
 #[derive(Debug)]
 struct LevelConfig {
-	level: u8,
-	name: String,
+	_level: u8,
+	_name: String,
 	platforms: Vec<(f32, f32, f32)>,
 	mid_1: Vec<(f32, f32, f32)>,
 	mid_2: Vec<(f32, f32, f32)>,
@@ -81,8 +76,8 @@ pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
 	fn build(&self, app: &mut App) {
 		app
-			.add_systems(PreStartup, LevelPlugin::setup)
-			.add_systems(Startup, LevelPlugin::load_level);
+			.add_systems(PreStartup, Self::setup)
+			.add_systems(Startup, Self::load_level);
 	}
 }
 
